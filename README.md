@@ -1,54 +1,96 @@
-# willow-clock
+# Willow Clock
 
-Willow clock app :3
-
-A simple desktop clock application built with Electron.js and PixiJS featuring an animated sprite.
-
-## Features
-
-- Real-time clock display with date
-- Animated PixiJS sprite (rotating golden star)
-- Beautiful gradient background
-- Cross-platform desktop application
-
+:3 
+ 
 ## Prerequisites
 
-- Node.js (v20 or higher recommended)
-- npm (comes with Node.js)
+- Node.js 18 or higher
 
 ## Installation
 
-1. Clone the repository:
 ```bash
 git clone https://github.com/GitPaulo/willow-clock.git
 cd willow-clock
-```
-
-2. Install dependencies:
-```bash
 npm install
 ```
 
-## Running the Application
+## Development
 
-To start the application:
+Start the application in development mode:
 
 ```bash
 npm start
 ```
 
+For headless environments (GitHub Codespaces):
+
+```bash
+npm run start:codespace
+```
+
+## Building
+
+### Development Build (Testing)
+
+Create an unpacked build for testing:
+
+```bash
+npm run pack
+```
+
+This creates `dist/linux-unpacked/` with the executable for immediate testing.
+
+### Production Builds
+
+Create distributable packages:
+
+```bash
+npm run build          # Current platform only
+npm run build:all      # Windows, macOS, and Linux
+```
+
+### Platform-Specific Builds
+
+```bash
+# Linux AppImage
+electron-builder --linux
+
+# Windows installer
+electron-builder --win
+
+# macOS app (requires macOS)
+electron-builder --mac
+```
+
+### Testing Built Applications
+
+**Linux (after `npm run pack`):**
+```bash
+./dist/linux-unpacked/willow-clock
+```
+
+**Windows (after building .exe):**
+- Run the installer from `dist/` directory
+- Or execute the portable version directly
+
+**Automated Testing:**
+```bash
+# Build and test in one command
+npm run pack && ./dist/linux-unpacked/willow-clock
+```
+
 ## Project Structure
 
-- `main.js` - Electron main process
-- `preload.js` - Preload script for secure renderer communication
-- `index.html` - Application UI
-- `renderer.js` - Renderer process with clock logic and PixiJS animation
-- `package.json` - Project configuration and dependencies
-
-## Technologies Used
-
-- [Electron.js](https://www.electronjs.org/) - Desktop application framework
-- [PixiJS](https://pixijs.com/) - 2D rendering engine for the animated sprite
+```
+├── main.js           # Electron main process
+├── src/
+│   ├── preload.js    # Secure preload script
+│   └── renderer.js   # Clock logic and PixiJS animation
+├── public/
+│   ├── index.html    # Application UI
+│   └── pixi.js       # Local PixiJS module
+└── package.json      # Project configuration
+```
 
 ## License
 

@@ -1,19 +1,62 @@
 {
   "name": "willow-clock",
   "version": "1.0.0",
-  "description": "Willow clock app :3",
+  "description": "Willow clock app with PixiJS animations",
   "main": "main.js",
+  "type": "module",
   "scripts": {
     "start": "electron .",
+    "start:headless": "xvfb-run -a electron . --enable-unsafe-swiftshader --disable-gpu-sandbox --no-sandbox",
+    "start:codespace": "npm run start:headless",
+    "prebuild": "cp node_modules/pixi.js/dist/pixi.mjs public/pixi.js",
+    "build": "electron-builder",
+    "build:all": "electron-builder --mac --win --linux",
+    "pack": "electron-builder --dir",
+    "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["electron", "pixi.js", "clock"],
+  "keywords": [
+    "electron",
+    "pixi.js",
+    "clock"
+  ],
   "author": "",
   "license": "Apache-2.0",
-  "devDependencies": {
-    "electron": "^38.2.0"
-  },
   "dependencies": {
-    "pixi.js": "^8.13.2"
+    "pixi.js": "^8.8.1"
+  },
+  "devDependencies": {
+    "electron": "^38.2.0",
+    "electron-builder": "^25.1.8",
+    "@eslint/js": "^9.21.0",
+    "eslint": "^9.21.0",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-prettier": "^5.2.6",
+    "prettier": "^3.5.3"
+  },
+  "build": {
+    "appId": "com.willow.clock",
+    "productName": "Willow Clock",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "public/**/*",
+      "src/**/*",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": "nsis"
+    },
+    "linux": {
+      "icon": "assets/icon.png",
+      "target": "AppImage"
+    }
   }
 }

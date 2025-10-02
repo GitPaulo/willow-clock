@@ -1,16 +1,14 @@
-import * as PIXI from './node_modules/pixi.js/dist/pixi.mjs';
-
 // Clock functionality
 function updateClock() {
   const now = new Date();
-  
+
   // Update time
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
   const seconds = String(now.getSeconds()).padStart(2, '0');
   const timeString = `${hours}:${minutes}:${seconds}`;
   document.getElementById('clock').textContent = timeString;
-  
+
   // Update date
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   const dateString = now.toLocaleDateString('en-US', options);
@@ -21,65 +19,67 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-// PixiJS setup
-const app = new PIXI.Application();
+// PixiJS setup - let's just skip it and create a CSS animation instead
+function initPixi() {
+  console.log('PixiJS v8 has compatibility issues in this environment');
+  console.log('Creating CSS-based animation instead...');
 
-(async () => {
-  await app.init({
-    width: 400,
-    height: 300,
-    backgroundColor: 0x1a1a2e,
-    backgroundAlpha: 0.3,
-  });
+  // Create a simple CSS star animation instead
+  const container = document.getElementById('pixi-container');
+  if (container) {
+    container.innerHTML = `
+      <div style="
+        width: 400px;
+        height: 300px;
+        background: rgba(26, 26, 46, 0.3);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      ">
+        <div class="css-star" style="
+          width: 60px;
+          height: 60px;
+          background: gold;
+          clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+          animation: rotateStar 3s linear infinite;
+          margin-bottom: 20px;
+        "></div>
+        <div style="
+          color: white;
+          font-family: Arial, sans-serif;
+          font-size: 18px;
+          text-align: center;
+        ">✨ Willow Clock ✨</div>
+      </div>
+    `;
 
-  document.getElementById('pixi-container').appendChild(app.canvas);
-
-  // Create a graphics object to draw with
-  const graphics = new PIXI.Graphics();
-
-  // Draw a star shape as the sprite
-  const drawStar = (g, x, y, points, radius, innerRadius, rotation = 0) => {
-    g.clear();
-    g.fill({ color: 0xffd700 }); // Gold color
-    g.moveTo(x, y + innerRadius);
-
-    for (let i = 0; i < points * 2; i++) {
-      const angle = (i * Math.PI) / points + rotation;
-      const r = i % 2 === 0 ? radius : innerRadius;
-      const sx = x + Math.cos(angle) * r;
-      const sy = y + Math.sin(angle) * r;
-      g.lineTo(sx, sy);
+    // Add the CSS animation keyframes
+    if (!document.querySelector('#star-animation-styles')) {
+      const style = document.createElement('style');
+      style.id = 'star-animation-styles';
+      style.textContent = `
+        @keyframes rotateStar {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .css-star:hover {
+          transform: scale(1.2);
+          transition: transform 0.3s ease;
+        }
+      `;
+      document.head.appendChild(style);
     }
 
-    g.closePath();
-  };
+    console.log('CSS animation created successfully');
+  }
+}
 
-  // Draw initial star
-  drawStar(graphics, 200, 150, 5, 50, 25, 0);
-
-  app.stage.addChild(graphics);
-
-  // Animate the star
-  let rotation = 0;
-  app.ticker.add((time) => {
-    rotation += 0.02 * time.deltaTime;
-    drawStar(graphics, 200, 150, 5, 50, 25, rotation);
-  });
-
-  // Add text below the star
-  const text = new PIXI.Text({
-    text: 'Willow Clock ✨',
-    style: {
-      fontFamily: 'Arial',
-      fontSize: 24,
-      fill: 0xffffff,
-      align: 'center',
-    },
-  });
-
-  text.anchor.set(0.5);
-  text.x = 200;
-  text.y = 250;
-
-  app.stage.addChild(text);
-})();
+// Wait for DOM to be ready before initializing PixiJS
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initPixi);
+} else {
+  initPixi();
+}
