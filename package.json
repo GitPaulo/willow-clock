@@ -1,0 +1,19 @@
+{
+  "name": "willow-clock",
+  "version": "1.0.0",
+  "description": "Willow clock app :3",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["electron", "pixi.js", "clock"],
+  "author": "",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "electron": "^38.2.0"
+  },
+  "dependencies": {
+    "pixi.js": "^8.13.2"
+  }
+}
