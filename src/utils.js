@@ -83,7 +83,7 @@ export function getAnimationConfig() {
     return {
       speed: 0.08,
       color: 0x00ff88,
-      bgColor: 0x1b2d1b,
+      bgColor: 0x253330,
       state: "click",
     };
   }
@@ -92,7 +92,7 @@ export function getAnimationConfig() {
     return {
       speed: 0.04,
       color: 0xff6b6b,
-      bgColor: 0x2d1b1b,
+      bgColor: 0x332828,
       state: "audio",
     };
   }
@@ -101,7 +101,7 @@ export function getAnimationConfig() {
     return {
       speed: 0.008,
       color: 0x9370db,
-      bgColor: 0x0f0f1a,
+      bgColor: 0x1f1f2a,
       state: "night",
     };
   }
@@ -109,7 +109,7 @@ export function getAnimationConfig() {
   return {
     speed: 0.015,
     color: 0xffd700,
-    bgColor: 0x1a1a2e,
+    bgColor: 0x2a2a3a,
     state: "day",
   };
 }

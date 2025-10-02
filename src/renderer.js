@@ -43,8 +43,8 @@ async function initPixi() {
     await app.init({
       width: width,
       height: height,
-      backgroundColor: 0x1a1a2e,
-      backgroundAlpha: 0.3,
+      backgroundColor: 0x2a2a3a,
+      backgroundAlpha: 0.15,
       antialias: true,
       resizeTo: container,
     });
@@ -124,9 +124,9 @@ async function initPixi() {
 function createFallbackAnimation() {
   const container = document.getElementById("pixi-container");
   container.innerHTML = `
-    <div style="width: 100%; height: 100%; background: rgba(26, 26, 46, 0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px;">
+    <div style="width: 100%; height: 100%; background: rgba(167, 167, 167, 0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px;">
       <div style="width: 60px; height: 60px; background: gold; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); animation: spin 3s linear infinite;"></div>
-      <p style="color: white; margin-top: 20px;">✨ Willow Clock ✨</p>
+      <p style="color: white; margin-top: 20px;"><willow placeholder></p>
     </div>
   `;
   const style = document.createElement("style");
