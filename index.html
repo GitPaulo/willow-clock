@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+  <title>Willow Clock</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    #clock {
+      font-size: 72px;
+      font-weight: 300;
+      color: white;
+      text-align: center;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    #date {
+      font-size: 24px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 30px;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    #pixi-container {
+      position: relative;
+      z-index: 1;
+    }
+    
+    #info {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="clock">00:00:00</div>
+  <div id="date">Loading...</div>
+  <div id="pixi-container"></div>
+  
+  <div id="info">
+    Electron: <span id="electron-version"></span> | 
+    Node: <span id="node-version"></span> | 
+    Chrome: <span id="chrome-version"></span>
+  </div>
+  
+  <script type="module" src="renderer.js"></script>
+</body>
+</html>
