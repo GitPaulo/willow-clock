@@ -1,74 +1,148 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss: https:">
-  <title>Willow Clock</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      overflow: hidden;
-    }
-    
-    #clock {
-      font-size: 72px;
-      font-weight: 300;
-      color: white;
-      text-align: center;
-      margin-bottom: 20px;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    }
-    
-    #date {
-      font-size: 24px;
-      color: rgba(255, 255, 255, 0.9);
-      margin-bottom: 30px;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-    
-    #pixi-container {
-      position: relative;
-      z-index: 1;
-      width: 400px;
-      height: 300px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      margin: 20px auto;
-    }
-    
-    #pixi-container canvas {
-      display: block;
-      width: 100% !important;
-      height: 100% !important;
-    }
-    
-    #info {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 12px;
-    }
-  </style>
-</head>
-<body>
-  <div id="clock">00:00:00</div>
-  <div id="date">Loading...</div>
-  <div id="pixi-container"></div>
-  
-  <div id="info">
-    Electron: <span id="electron-version"></span> | 
-    Node: <span id="node-version"></span> | 
-    Chrome: <span id="chrome-version"></span>
-  </div>
-  
-  <script type="module" src="../src/renderer.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- unsafe-eval needed for PIXI.js WebGL shader compilation -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; object-src 'none';"
+    />
+    <title>Willow Clock</title>
+    <style>
+      @font-face {
+        font-family: "PawFont";
+        src: url("../assets/font_paw.otf") format("opentype");
+        font-display: swap;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        margin: 0;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        width: 100vw;
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+
+      #clock {
+        font-family:
+          "PawFont",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        font-size: clamp(28px, 10vw, 56px);
+        font-weight: 300;
+        color: white;
+        text-align: center;
+        margin-bottom: 8px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        white-space: nowrap;
+        line-height: 1.1;
+      }
+
+      #date {
+        font-size: clamp(12px, 4vw, 20px);
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 20px;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        line-height: 1.2;
+      }
+
+      #pixi-container {
+        position: relative;
+        z-index: 1;
+        width: min(90vw, 340px);
+        height: min(60vw, 260px);
+        min-height: 180px;
+        max-height: 300px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        margin: 0 auto 20px auto;
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      #pixi-container canvas {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 11px;
+        object-fit: contain;
+        margin: 0 auto !important;
+        position: relative;
+      }
+
+      #info {
+        position: fixed;
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: clamp(8px, 2vw, 11px);
+        text-align: center;
+        z-index: 10;
+        line-height: 1.3;
+      }
+
+      /* Responsive adjustments for different screen sizes */
+      @media (min-width: 400px) {
+        body {
+          padding: 20px;
+        }
+
+        #pixi-container {
+          width: min(80vw, 380px);
+          height: min(50vw, 280px);
+        }
+      }
+
+      @media (min-height: 700px) {
+        #clock {
+          margin-bottom: 15px;
+        }
+
+        #date {
+          margin-bottom: 30px;
+        }
+
+        #pixi-container {
+          margin-bottom: 30px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="clock">00:00:00</div>
+    <div id="date">Loading...</div>
+    <div id="pixi-container"></div>
+
+    <div id="info">
+      Electron: <span id="electron-version"></span> | Node:
+      <span id="node-version"></span> | Chrome:
+      <span id="chrome-version"></span>
+    </div>
+
+    <script type="module" src="../src/renderer.js"></script>
+  </body>
 </html>

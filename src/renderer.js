@@ -1,136 +1,142 @@
-import { Application, Graphics, Text } from '../public/pixi.js';
+import { Application, Graphics, Text } from "../public/pixi.js";
+import {
+  getAnimationConfig,
+  updateClock,
+  updateDayNightCycle,
+  setupAudioDetection,
+  triggerClickEffect,
+  setupTestFunctions,
+} from "./utils.js";
 
-// Clock functionality
-function updateClock() {
-  const now = new Date();
-
-  // Update time
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  const timeString = `${hours}:${minutes}:${seconds}`;
-  document.getElementById('clock').textContent = timeString;
-
-  // Update date
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const dateString = now.toLocaleDateString('en-US', options);
-  document.getElementById('date').textContent = dateString;
-}
-
-// Initialize clock
 updateClock();
 setInterval(updateClock, 1000);
+updateDayNightCycle();
+setInterval(updateDayNightCycle, 60000);
+setupAudioDetection();
+setupTestFunctions();
 
-// PixiJS setup using v8 API
+function drawStar(graphics, x, y, points, radius, innerRadius, rotation = 0) {
+  const config = getAnimationConfig();
+  graphics.clear();
+  const step = (Math.PI * 2) / points;
+  const vertices = [];
+  for (let i = 0; i < points * 2; i++) {
+    const r = i % 2 === 0 ? radius : innerRadius;
+    const angle = (i * step) / 2 + rotation;
+    const px = x + Math.cos(angle - Math.PI / 2) * r;
+    const py = y + Math.sin(angle - Math.PI / 2) * r;
+    vertices.push(px, py);
+  }
+  graphics.poly(vertices);
+  graphics.fill(config.color);
+}
+
 async function initPixi() {
-  console.log('Initializing PixiJS v8 from node_modules...');
-
+  console.log("🎨 Initializing PIXI.js...");
   try {
-    // Create application using new v8 syntax
-    const app = new Application();
+    const container = document.getElementById("pixi-container");
+    const containerRect = container.getBoundingClientRect();
+    const width = Math.floor(containerRect.width) || 320;
+    const height = Math.floor(containerRect.height) || 240;
 
-    // Initialize the application
+    const app = new Application();
     await app.init({
-      width: 400,
-      height: 300,
+      width: width,
+      height: height,
       backgroundColor: 0x1a1a2e,
       backgroundAlpha: 0.3,
-      antialias: true
+      antialias: true,
+      resizeTo: container,
     });
 
-    console.log('PixiJS application created successfully');
-
-    // Add to DOM
-    const container = document.getElementById('pixi-container');
     container.appendChild(app.canvas);
+    app.canvas.style.cursor = "pointer";
+    app.canvas.style.display = "block";
+    app.canvas.style.margin = "0 auto";
+    app.canvas.addEventListener("click", triggerClickEffect);
+    container.addEventListener("click", triggerClickEffect);
 
-    // Create animated star using Graphics
     const star = new Graphics();
+    let centerX = width / 2;
+    let centerY = height / 2;
+    let starRadius = Math.min(width, height) * 0.15;
+    let starInnerRadius = starRadius * 0.5;
 
-    function drawStar(graphics, x, y, points, radius, innerRadius, rotation = 0) {
-      graphics.clear();
-      graphics.beginFill(0xffd700); // Gold color
-
-      const step = Math.PI / points;
-      graphics.moveTo(x, y - radius);
-
-      for (let i = 0; i <= points * 2; i++) {
-        const r = (i % 2 === 0) ? radius : innerRadius;
-        const angle = i * step + rotation;
-        const px = x + Math.cos(angle - Math.PI / 2) * r;
-        const py = y + Math.sin(angle - Math.PI / 2) * r;
-        graphics.lineTo(px, py);
-      }
-
-      graphics.endFill();
-    }
-
-    // Position star in center
-    const centerX = 200;
-    const centerY = 120;
-
-    // Draw initial star
-    drawStar(star, centerX, centerY, 5, 40, 20, 0);
+    drawStar(star, centerX, centerY, 5, starRadius, starInnerRadius, 0);
     app.stage.addChild(star);
 
-    // Add text
     const text = new Text({
-      text: '✨ Willow Clock ✨',
+      text: "✨ Willow Clock ✨",
       style: {
-        fontFamily: 'Arial',
+        fontFamily: "Arial",
         fontSize: 20,
         fill: 0xffffff,
-        align: 'center'
-      }
+        align: "center",
+      },
     });
 
     text.anchor.set(0.5);
     text.x = centerX;
-    text.y = centerY + 80;
+    text.y = centerY + height * 0.25;
     app.stage.addChild(text);
 
-    // Animation
+    function updateLayout() {
+      const newWidth = app.screen.width;
+      const newHeight = app.screen.height;
+      centerX = newWidth / 2;
+      centerY = newHeight / 2;
+      starRadius = Math.min(newWidth, newHeight) * 0.15;
+      starInnerRadius = starRadius * 0.5;
+      text.x = centerX;
+      text.y = centerY + newHeight * 0.25;
+    }
+
+    app.renderer.on("resize", updateLayout);
+
     let rotation = 0;
+    let lastState = "";
     app.ticker.add((time) => {
-      rotation += 0.01 * time.deltaTime;
-      drawStar(star, centerX, centerY, 5, 40, 20, rotation);
+      const config = getAnimationConfig();
+      if (config.state !== lastState) {
+        console.log(`🌟 Animation: ${config.state}`);
+        lastState = config.state;
+      }
+      rotation += config.speed * time.deltaTime;
+      drawStar(
+        star,
+        centerX,
+        centerY,
+        5,
+        starRadius,
+        starInnerRadius,
+        rotation,
+      );
+      app.renderer.background.color = config.bgColor;
     });
 
-    console.log('PixiJS setup complete with animations');
-
+    console.log("✅ PIXI.js setup complete");
   } catch (error) {
-    console.error('PixiJS initialization failed:', error);
-
-    // Fallback to CSS animation
-    const container = document.getElementById('pixi-container');
-    container.innerHTML = `
-      <div style="
-        width: 400px; height: 300px;
-        background: rgba(26, 26, 46, 0.3);
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        border-radius: 10px;
-      ">
-        <div style="
-          width: 60px; height: 60px;
-          background: gold;
-          clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-          animation: spin 3s linear infinite;
-        "></div>
-        <p style="color: white; margin-top: 20px;">✨ Willow Clock ✨</p>
-      </div>
-    `;
-
-    // Add CSS animation
-    const style = document.createElement('style');
-    style.textContent = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
-    document.head.appendChild(style);
+    console.error("❌ PIXI.js failed:", error);
+    createFallbackAnimation();
   }
 }
 
-// Wait for DOM to load
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initPixi);
+function createFallbackAnimation() {
+  const container = document.getElementById("pixi-container");
+  container.innerHTML = `
+    <div style="width: 100%; height: 100%; background: rgba(26, 26, 46, 0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px;">
+      <div style="width: 60px; height: 60px; background: gold; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); animation: spin 3s linear infinite;"></div>
+      <p style="color: white; margin-top: 20px;">✨ Willow Clock ✨</p>
+    </div>
+  `;
+  const style = document.createElement("style");
+  style.textContent =
+    "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }";
+  document.head.appendChild(style);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initPixi);
 } else {
   initPixi();
 }
