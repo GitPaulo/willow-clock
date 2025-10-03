@@ -24,14 +24,14 @@
         Arial, sans-serif;
       margin: 0;
       padding: 15px;
+      /*
       background: linear-gradient(135deg,
           #ffffff 0%,
-          /* pastel cream (white patch) */
           #ffd6ab 50%,
-          /* pastel peach-orange (ginger patch) */
           #8b8b8b 100%
-          /* pastel lavender-grey (black patch softened) */
         );
+      */
+      background: #fac68f;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -146,7 +146,8 @@
   <div id="info">
     Electron: <span id="electron-version"></span> | Node:
     <span id="node-version"></span> | Chrome:
-    <span id="chrome-version"></span>
+    <span id="chrome-version"></span> | State:
+    <span id="state-info">loading...</span>
   </div>
 
   <script type="module" src="../src/renderer.js"></script>

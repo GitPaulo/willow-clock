@@ -1,22 +1,17 @@
 import { Application, Graphics, Text } from "../public/pixi.js";
 import {
-  getAnimationConfig,
-  updateClock,
-  updateDayNightCycle,
+  initializeApp,
   setupAudioDetection,
-  triggerClickEffect,
+  handleClick,
   setupTestFunctions,
 } from "./utils.js";
+import { getStateConfig, onStateChange, getCurrentState } from "./state-machine.js";
 
-updateClock();
-setInterval(updateClock, 1000);
-updateDayNightCycle();
-setInterval(updateDayNightCycle, 60000);
+initializeApp();
 setupAudioDetection();
 setupTestFunctions();
 
-function drawStar(graphics, x, y, points, radius, innerRadius, rotation = 0) {
-  const config = getAnimationConfig();
+function drawStar(graphics, x, y, points, radius, innerRadius, rotation, color) {
   graphics.clear();
   const step = (Math.PI * 2) / points;
   const vertices = [];
@@ -28,7 +23,7 @@ function drawStar(graphics, x, y, points, radius, innerRadius, rotation = 0) {
     vertices.push(px, py);
   }
   graphics.poly(vertices);
-  graphics.fill(config.color);
+  graphics.fill(color);
 }
 
 async function initPixi() {
@@ -41,20 +36,17 @@ async function initPixi() {
 
     const app = new Application();
     await app.init({
-      width: width,
-      height: height,
-      backgroundColor: 0x2a2a3a,
-      backgroundAlpha: 0.15,
+      width,
+      height,
+      backgroundAlpha: 0,
       antialias: true,
       resizeTo: container,
     });
 
     container.appendChild(app.canvas);
+    container.style.background = "rgba(255, 255, 255, 0.15)";
     app.canvas.style.cursor = "pointer";
-    app.canvas.style.display = "block";
-    app.canvas.style.margin = "0 auto";
-    app.canvas.addEventListener("click", triggerClickEffect);
-    container.addEventListener("click", triggerClickEffect);
+    app.canvas.addEventListener("click", handleClick);
 
     const star = new Graphics();
     let centerX = width / 2;
@@ -62,7 +54,7 @@ async function initPixi() {
     let starRadius = Math.min(width, height) * 0.15;
     let starInnerRadius = starRadius * 0.5;
 
-    drawStar(star, centerX, centerY, 5, starRadius, starInnerRadius, 0);
+    drawStar(star, centerX, centerY, 5, starRadius, starInnerRadius, 0, getStateConfig().color);
     app.stage.addChild(star);
 
     const text = new Text({
@@ -94,24 +86,25 @@ async function initPixi() {
     app.renderer.on("resize", updateLayout);
 
     let rotation = 0;
-    let lastState = "";
+
+    // Update state display function
+    const updateStateDisplay = (state) => {
+      const element = document.getElementById("state-info");
+      if (element) element.innerText = state;
+    };
+
+    onStateChange((newState) => {
+      console.log(`🌟 ${newState}`);
+      updateStateDisplay(newState);
+    });
+
+    // Set initial state display
+    updateStateDisplay(getCurrentState());
+
     app.ticker.add((time) => {
-      const config = getAnimationConfig();
-      if (config.state !== lastState) {
-        console.log(`🌟 Animation: ${config.state}`);
-        lastState = config.state;
-      }
+      const config = getStateConfig();
       rotation += config.speed * time.deltaTime;
-      drawStar(
-        star,
-        centerX,
-        centerY,
-        5,
-        starRadius,
-        starInnerRadius,
-        rotation,
-      );
-      app.renderer.background.color = config.bgColor;
+      drawStar(star, centerX, centerY, 5, starRadius, starInnerRadius, rotation, config.color);
     });
 
     console.log("✅ PIXI.js setup complete");
@@ -122,21 +115,15 @@ async function initPixi() {
 }
 
 function createFallbackAnimation() {
-  const container = document.getElementById("pixi-container");
-  container.innerHTML = `
+  document.getElementById("pixi-container").innerHTML = `
     <div style="width: 100%; height: 100%; background: rgba(167, 167, 167, 0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px;">
       <div style="width: 60px; height: 60px; background: gold; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); animation: spin 3s linear infinite;"></div>
-      <p style="color: white; margin-top: 20px;"><willow placeholder></p>
+      <p style="color: white; margin-top: 20px;">Willow fallback</p>
     </div>
+    <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
   `;
-  const style = document.createElement("style");
-  style.textContent =
-    "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }";
-  document.head.appendChild(style);
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initPixi);
-} else {
-  initPixi();
-}
+document.readyState === "loading"
+  ? document.addEventListener("DOMContentLoaded", initPixi)
+  : initPixi();

@@ -12,8 +12,8 @@ const __dirname = path.dirname(__filename);
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 360,
-    height: 640,
+    width: 324,
+    height: 380,
     webPreferences: {
       preload: path.join(__dirname, "src/preload.js"),
       contextIsolation: true,
