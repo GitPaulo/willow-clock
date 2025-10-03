@@ -10,7 +10,13 @@
   <style>
     @font-face {
       font-family: "PawFont";
-      src: url("../assets/font_paw.otf") format("opentype");
+      src: url("../assets/fonts/font_paw.otf") format("opentype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "PencilFont";
+      src: url("../assets/fonts/font_pencil.otf") format("opentype");
       font-display: swap;
     }
 
@@ -42,6 +48,13 @@
       overflow-y: auto;
     }
 
+    #mode {
+      cursor: pointer;
+      user-select: none;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+
     #clock {
       font-family:
         "PawFont",
@@ -60,15 +73,37 @@
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
       white-space: nowrap;
       line-height: 1.1;
+      transition: all 0.3s ease;
+    }
+
+    #clock.hover {
+      transform: scale(1.05);
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(255, 255, 255, 0.4),
+        0 0 35px rgba(255, 255, 255, 0.2);
+    }
+
+    #mode:active #clock {
+      transform: scale(0.98);
+      transition: all 0.1s ease;
     }
 
     #date {
-      font-size: clamp(12px, 4vw, 20px);
+      font-family: "PencilFont", "PawFont", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: clamp(18px, 6vw, 30px);
       color: rgba(255, 255, 255, 0.9);
-      margin-bottom: 20px;
+      margin-bottom: 0;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
       text-align: center;
       line-height: 1.2;
+      transition: all 0.3s ease;
+    }
+
+    #date.hover {
+      transform: scale(1.05);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3),
+        0 0 15px rgba(255, 255, 255, 0.35),
+        0 0 25px rgba(255, 255, 255, 0.15);
     }
 
     #pixi-container {
@@ -123,12 +158,12 @@
     }
 
     @media (min-height: 700px) {
-      #clock {
-        margin-bottom: 15px;
+      #mode {
+        margin-bottom: 30px;
       }
 
-      #date {
-        margin-bottom: 30px;
+      #clock {
+        margin-bottom: 15px;
       }
 
       #pixi-container {
@@ -139,8 +174,10 @@
 </head>
 
 <body>
-  <div id="clock">00:00:00</div>
-  <div id="date">Loading...</div>
+  <div id="mode">
+    <div id="clock">00:00:00</div>
+    <div id="date">Loading...</div>
+  </div>
   <div id="pixi-container"></div>
 
   <div id="info">
@@ -150,6 +187,7 @@
     <span id="state-info">loading...</span>
   </div>
 
+  <script type="module" src="../src/app.js"></script>
   <script type="module" src="../src/renderer.js"></script>
 </body>
 

@@ -126,7 +126,7 @@ function createTitle(x, y) {
   const text = new Text({
     text: "Test speech!",
     style: {
-      fontFamily: "Arial",
+      fontFamily: "PencilFont, Arial",
       fontSize: 20,
       fill: 0xffffff,
       align: "center",
