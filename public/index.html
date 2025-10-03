@@ -3,9 +3,9 @@
 
 <head>
   <meta charset="UTF-8" />
-  <!-- unsafe-eval needed for PIXI.js WebGL shader compilation -->
+  <!-- CSP configured for PIXI.js: unsafe-eval for shaders, blob for workers, data/file for images -->
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; object-src 'none';" />
+    content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file:; connect-src 'self' data:; worker-src blob:; object-src 'none';" />
   <title>Willow Clock</title>
   <style>
     @font-face {

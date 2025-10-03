@@ -40,8 +40,8 @@ function transitionTo(newState) {
   if (state.current === newState) return;
   const oldState = state.current;
   state.current = newState;
-  console.log(`🔄 ${oldState} → ${newState}`);
-  state.listeners.forEach((cb) => cb(newState, oldState));
+  console.log(`[StateMachine] Transition: ${oldState} -> ${newState}`);
+  state.listeners.forEach((callback) => callback(newState));
 }
 
 function transitionToBaseState(baseState) {

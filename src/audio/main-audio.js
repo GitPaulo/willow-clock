@@ -8,7 +8,7 @@ function initSystemAudio(window) {
   mainWindow = window;
 
   const os = platform();
-  console.log("Initializing system audio detection for:", os);
+  console.log("[MainAudio] Initializing system audio detection for platform:", os);
 
   try {
     if (os === "win32") {
@@ -16,18 +16,18 @@ function initSystemAudio(window) {
     } else if (os === "linux") {
       return startLinuxAudioDetection();
     } else {
-      console.log("System audio not supported on", os);
+      console.log("[MainAudio] System audio not supported on platform:", os);
       return false;
     }
   } catch (error) {
-    console.log("System audio detection failed:", error.message);
+    console.log("[MainAudio] System audio detection failed:", error.message);
     return false;
   }
 }
 
 // Windows WASAPI detection
 function startWindowsAudioDetection() {
-  console.log("Starting Windows audio detection...");
+  console.log("[MainAudio] Starting Windows audio detection...");
 
   // Use PowerShell to monitor system audio
   const script = `
@@ -60,7 +60,7 @@ function startWindowsAudioDetection() {
   });
 
   audioProcess.on("error", (error) => {
-    console.log("Windows audio detection failed:", error.message);
+    console.log("[MainAudio] ERROR: Windows audio detection failed:", error.message);
   });
 
   return true;
@@ -68,7 +68,7 @@ function startWindowsAudioDetection() {
 
 // Linux PulseAudio detection
 function startLinuxAudioDetection() {
-  console.log("Starting Linux audio detection...");
+  console.log("[MainAudio] Starting Linux audio detection...");
 
   // Use pactl to monitor audio
   audioProcess = spawn("bash", [
@@ -88,8 +88,8 @@ function startLinuxAudioDetection() {
   });
 
   audioProcess.on("error", (error) => {
-    console.log("Linux audio detection failed:", error.message);
-    console.log("Install pulseaudio-utils: sudo apt install pulseaudio-utils");
+    console.log("[MainAudio] ERROR: Linux audio detection failed:", error.message);
+    console.log("[MainAudio] Install required package: sudo apt install pulseaudio-utils");
   });
 
   return true;
@@ -99,7 +99,7 @@ function startLinuxAudioDetection() {
 function updateAudioState(newState) {
   if (isAudioActive !== newState) {
     isAudioActive = newState;
-    console.log("System audio:", newState ? "playing" : "stopped");
+    console.log(`[MainAudio] Audio state changed: ${newState ? "playing" : "stopped"}`);
 
     // Send to renderer process
     if (mainWindow && !mainWindow.isDestroyed()) {

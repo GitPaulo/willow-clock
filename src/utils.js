@@ -9,11 +9,9 @@ import {
 export async function setupAudioDetection() {
   const success = await initSystemAudio(setMusicActive);
 
-  if (!success) {
-    console.log("❌ Audio unavailable - press T to test");
-    document.addEventListener("keydown", (e) => {
-      if (e.key.toLowerCase() === "t") toggleSystemAudio();
-    });
+  if (!window.audioAPI) {
+    console.log("[Utils] Audio API unavailable - press T key to test");
+    return;
   }
 }
 
@@ -36,9 +34,9 @@ export function handleClick() {
 }
 
 export function setupTestFunctions() {
-  window.testPet = triggerPet;
-  window.testMusic = toggleSystemAudio;
-  console.log("🧪 testPet() | testMusic() | T key");
+  window.testPet = () => triggerPet();
+  window.testMusic = () => setMusicActive(true);
+  console.log("[Utils] Test functions available: testPet(), testMusic(), T key for audio toggle");
 }
 
 export function initializeApp() {

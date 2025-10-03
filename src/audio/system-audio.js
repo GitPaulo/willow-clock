@@ -4,8 +4,8 @@ export async function initSystemAudio(callback) {
   onAudioChangeCallback = callback;
 
   if (!window.audioAPI) {
-    console.log("❌ AudioAPI not available - preload script failed");
-    console.log("❌ System audio not available - using T key for testing");
+    console.log("[SystemAudio] ERROR: AudioAPI not available - preload script failed");
+    console.log("[SystemAudio] Using T key for testing instead");
     return false;
   }
   window.audioAPI.onAudioStateChanged((audioActive) => {
@@ -18,9 +18,9 @@ export async function initSystemAudio(callback) {
   const success = await window.audioAPI.startAudio();
 
   if (success) {
-    console.log("✅ System audio detection active");
+    console.log("[SystemAudio] System audio detection active");
   } else {
-    console.log("❌ System audio not available - using T key for testing");
+    console.log("[SystemAudio] System audio not available - using T key for testing");
   }
 
   return success;
