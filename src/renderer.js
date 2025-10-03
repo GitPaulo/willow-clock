@@ -20,7 +20,7 @@ const SPRITE_CONFIG = {
     frameHeight: 128,
     speed: 0.08,
     loop: true,
-    scale: 1.0
+    scale: 2.5
   },
   night: {
     path: "../assets/animations/sprite_night.png",
@@ -29,7 +29,7 @@ const SPRITE_CONFIG = {
     frameHeight: 128,
     speed: 0.08,
     loop: true,
-    scale: 1.0
+    scale: 2.5
   },
   music: {
     path: "../assets/animations/sprite_music.png",
@@ -38,7 +38,7 @@ const SPRITE_CONFIG = {
     frameHeight: 128,
     speed: 0.18,
     loop: true,
-    scale: 1.0
+    scale: 2.5
   },
   pet: {
     path: "../assets/animations/sprite_pet.png",
@@ -47,7 +47,7 @@ const SPRITE_CONFIG = {
     frameHeight: 128,
     speed: 0.12,
     loop: false,
-    scale: 1.0
+    scale: 2.5
   },
 };
 
