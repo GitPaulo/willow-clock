@@ -53,6 +53,9 @@
       user-select: none;
       display: inline-block;
       margin-bottom: 20px;
+      max-width: 600px;
+      width: 90vw;
+      text-align: center;
     }
 
     #clock {
@@ -104,6 +107,155 @@
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3),
         0 0 15px rgba(255, 255, 255, 0.35),
         0 0 25px rgba(255, 255, 255, 0.15);
+    }
+
+    /* Mode visibility */
+    #clock-mode,
+    #stopwatch,
+    #timer,
+    #focus {
+      display: none;
+    }
+
+    #clock-mode.active,
+    #stopwatch.active,
+    #timer.active,
+    #focus.active {
+      display: block;
+    }
+
+    /* Focus mode */
+    #focus-title {
+      font-family: "PencilFont", "PawFont", Arial, sans-serif;
+      font-size: clamp(42px, 15vw, 84px);
+      font-weight: 300;
+      color: white;
+      text-align: center;
+      margin-bottom: 8px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      white-space: nowrap;
+      line-height: 1.1;
+      transition: all 0.3s ease;
+    }
+
+    #focus-title.hover {
+      transform: scale(1.05);
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(255, 255, 255, 0.4),
+        0 0 35px rgba(255, 255, 255, 0.2);
+    }
+
+    #focus-time {
+      font-family: "PawFont", monospace;
+      font-size: clamp(18px, 6vw, 30px);
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.9);
+      text-align: center;
+      margin-bottom: 0;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      line-height: 1.2;
+      transition: all 0.3s ease;
+    }
+
+    #focus-time.hover {
+      transform: scale(1.05);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3),
+        0 0 15px rgba(255, 255, 255, 0.35),
+        0 0 25px rgba(255, 255, 255, 0.15);
+    }
+
+    /* Stopwatch time display */
+    #stopwatch-time {
+      font-family: "PawFont", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: clamp(42px, 15vw, 84px);
+      font-weight: 300;
+      color: white;
+      text-align: center;
+      margin-bottom: 0;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      white-space: nowrap;
+      line-height: 1.1;
+      transition: all 0.3s ease;
+    }
+
+    #stopwatch-time.hover {
+      transform: scale(1.05);
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(255, 255, 255, 0.4),
+        0 0 35px rgba(255, 255, 255, 0.2);
+    }
+
+    /* Timer input */
+    #timer-input {
+      font-family: "PawFont", monospace;
+      font-size: clamp(42px, 15vw, 84px);
+      font-weight: 300;
+      color: white;
+      text-align: center;
+      background: transparent;
+      border: none;
+      outline: none;
+      margin-bottom: 0;
+      margin-left: auto;
+      margin-right: auto;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      width: auto;
+      min-width: 8ch;
+      max-width: 100%;
+      padding: 0;
+      cursor: text;
+      transition: all 0.3s ease;
+      display: block;
+    }
+
+    #timer-input.hover {
+      transform: scale(1.05);
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(255, 255, 255, 0.4),
+        0 0 35px rgba(255, 255, 255, 0.2);
+    }
+
+    #timer-input:focus {
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 15px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Mode controls (buttons) */
+    .mode-controls {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 0;
+      height: 18px;
+    }
+
+    .mode-controls button {
+      font-family: "PencilFont", Arial, sans-serif;
+      padding: 1px 8px;
+      font-size: 10px;
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      line-height: 1;
+      height: 18px;
+      display: flex;
+      align-items: center;
+    }
+
+    .mode-controls button:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .mode-controls button:active {
+      transform: translateY(0);
+      box-shadow: none;
     }
 
     #pixi-container {
@@ -175,8 +327,35 @@
 
 <body>
   <div id="mode">
-    <div id="clock">00:00:00</div>
-    <div id="date">Loading...</div>
+    <!-- Clock Mode -->
+    <div id="clock-mode" class="active">
+      <div id="clock">00:00:00</div>
+      <div id="date">Loading...</div>
+    </div>
+
+    <!-- Stopwatch Mode -->
+    <div id="stopwatch">
+      <div id="stopwatch-time">00:00:00</div>
+      <div class="mode-controls">
+        <button id="stopwatch-start">Start</button>
+        <button id="stopwatch-reset">Reset</button>
+      </div>
+    </div>
+
+    <!-- Timer Mode -->
+    <div id="timer">
+      <input id="timer-input" type="text" value="00:05:00" maxlength="8" />
+      <div class="mode-controls">
+        <button id="timer-start">Start</button>
+        <button id="timer-stop">Stop</button>
+      </div>
+    </div>
+
+    <!-- Focus Mode -->
+    <div id="focus">
+      <div id="focus-title">Focus!</div>
+      <div id="focus-time">00:00:00</div>
+    </div>
   </div>
   <div id="pixi-container"></div>
 
