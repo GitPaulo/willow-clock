@@ -344,25 +344,25 @@ function setupBackgroundMusic() {
 
   // Set very low initial volume to prevent any clipping
   backgroundMusic.volume = 0.08;
-  
+
   // Additional audio optimization settings
   backgroundMusic.preservesPitch = false;
   backgroundMusic.mozPreservesPitch = false;
   backgroundMusic.webkitPreservesPitch = false;
-  
+
   // Set playback rate to exactly 1.0 to prevent pitch/speed artifacts
   backgroundMusic.playbackRate = 1.0;
   backgroundMusic.defaultPlaybackRate = 1.0;
-  
+
   // Ensure proper audio format handling
   backgroundMusic.preload = "auto";
   backgroundMusic.crossOrigin = "anonymous";
-  
+
   // Add event listener to detect audio loading errors
   backgroundMusic.addEventListener("error", (e) => {
     console.warn("[App] Audio loading error:", e.target.error);
   });
-  
+
   backgroundMusic.addEventListener("canplaythrough", () => {
     console.log("[App] Audio loaded successfully, ready for smooth playback");
   });
@@ -375,7 +375,7 @@ function setupBackgroundMusic() {
     const steps = 50;
     const volumeStep = targetVolume / steps;
     const timeStep = fadeInDuration / steps;
-    
+
     let currentStep = 0;
     const fadeInterval = setInterval(() => {
       if (currentStep >= steps) {
@@ -383,7 +383,7 @@ function setupBackgroundMusic() {
         backgroundMusic.volume = targetVolume;
         return;
       }
-      
+
       backgroundMusic.volume = volumeStep * currentStep;
       currentStep++;
     }, timeStep);
