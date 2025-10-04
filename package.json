@@ -26,6 +26,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.1.0",
     "pixi.js": "^8.8.1"
   },
   "devDependencies": {

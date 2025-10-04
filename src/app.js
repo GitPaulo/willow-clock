@@ -10,6 +10,8 @@ let timerRemaining = 0;
 let focusInterval = null;
 let focusTime = 0;
 let cursorTrail = null;
+let backgroundMusic = null;
+let isMuted = false;
 
 document.addEventListener("DOMContentLoaded", () => {
   setupModeSystem();
@@ -17,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupTimer();
   setupFocus();
   setupCursorTrail();
+  setupBackgroundMusic();
 });
 
 function setupCursorTrail() {
@@ -199,25 +202,36 @@ function setupTimer() {
   let isTimerLocked = true;
   timerInput.readOnly = true;
 
+  // Initialize start/stop buttons as enabled (since timer is locked)
+  startBtn.disabled = false;
+  stopBtn.disabled = false;
+
   // Lock/unlock functionality
   editBtn.addEventListener("click", () => {
     isTimerLocked = !isTimerLocked;
     timerInput.readOnly = isTimerLocked;
-    editBtn.textContent = isTimerLocked ? "🔒" : "🔓";
+    editBtn.textContent = isTimerLocked ? "Unlock" : "Lock";
     editBtn.title = isTimerLocked
       ? "Click to unlock timer for editing"
       : "Click to lock timer";
+
+    // Enable/disable start/stop buttons based on lock state
+    startBtn.disabled = !isTimerLocked;
+    stopBtn.disabled = !isTimerLocked;
 
     if (!isTimerLocked) {
       // Focus input when unlocked
       setTimeout(() => timerInput.focus(), 100);
     }
 
-    console.log(`[App] Timer ${isTimerLocked ? "locked" : "unlocked"}`);
+    console.log(
+      `[App] Timer ${isTimerLocked ? "locked" : "unlocked"} - Start/Stop buttons ${isTimerLocked ? "enabled" : "disabled"}`,
+    );
   });
 
   startBtn.addEventListener("click", () => {
     if (timerInterval) return; // Already running
+    if (!isTimerLocked) return; // Can't start when unlocked/editing
 
     // Parse input (HH:MM:SS)
     const parts = timerInput.value.split(":").map((p) => parseInt(p) || 0);
@@ -233,7 +247,7 @@ function setupTimer() {
     const wasLocked = isTimerLocked;
     isTimerLocked = true;
     timerInput.readOnly = true;
-    editBtn.textContent = "🔒";
+    editBtn.textContent = "Lock";
     editBtn.disabled = true;
 
     timerInterval = setInterval(() => {
@@ -245,7 +259,7 @@ function setupTimer() {
         // Restore previous lock state
         isTimerLocked = wasLocked;
         timerInput.readOnly = isTimerLocked;
-        editBtn.textContent = isTimerLocked ? "🔒" : "🔓";
+        editBtn.textContent = isTimerLocked ? "Lock" : "Unlock";
         editBtn.disabled = false;
         console.log("[App] Timer finished!");
         // TODO: Play sound or notification
@@ -256,6 +270,7 @@ function setupTimer() {
   });
 
   stopBtn.addEventListener("click", () => {
+    if (!isTimerLocked) return; // Can't stop when unlocked/editing
     if (timerInterval) {
       clearInterval(timerInterval);
       timerInterval = null;
@@ -315,4 +330,111 @@ function formatFocusTime() {
   const seconds = totalSeconds % 60;
 
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function setupBackgroundMusic() {
+  backgroundMusic = document.getElementById("background-music");
+  const audioToggle = document.getElementById("audio-toggle");
+  const volumeIcon = document.getElementById("volume-icon");
+
+  if (!backgroundMusic || !audioToggle || !volumeIcon) {
+    console.log("[App] Background music elements not found");
+    return;
+  }
+
+  // Set very low initial volume to prevent any clipping
+  backgroundMusic.volume = 0.08;
+  
+  // Additional audio optimization settings
+  backgroundMusic.preservesPitch = false;
+  backgroundMusic.mozPreservesPitch = false;
+  backgroundMusic.webkitPreservesPitch = false;
+  
+  // Set playback rate to exactly 1.0 to prevent pitch/speed artifacts
+  backgroundMusic.playbackRate = 1.0;
+  backgroundMusic.defaultPlaybackRate = 1.0;
+  
+  // Ensure proper audio format handling
+  backgroundMusic.preload = "auto";
+  backgroundMusic.crossOrigin = "anonymous";
+  
+  // Add event listener to detect audio loading errors
+  backgroundMusic.addEventListener("error", (e) => {
+    console.warn("[App] Audio loading error:", e.target.error);
+  });
+  
+  backgroundMusic.addEventListener("canplaythrough", () => {
+    console.log("[App] Audio loaded successfully, ready for smooth playback");
+  });
+
+  // Smooth fade-in function to prevent audio pops/distortion
+  const fadeInAudio = () => {
+    backgroundMusic.volume = 0;
+    const targetVolume = 0.08;
+    const fadeInDuration = 1000; // 1 second
+    const steps = 50;
+    const volumeStep = targetVolume / steps;
+    const timeStep = fadeInDuration / steps;
+    
+    let currentStep = 0;
+    const fadeInterval = setInterval(() => {
+      if (currentStep >= steps) {
+        clearInterval(fadeInterval);
+        backgroundMusic.volume = targetVolume;
+        return;
+      }
+      
+      backgroundMusic.volume = volumeStep * currentStep;
+      currentStep++;
+    }, timeStep);
+  };
+
+  // Auto-play with user interaction fallback
+  const tryPlayMusic = async () => {
+    try {
+      await backgroundMusic.play();
+      fadeInAudio();
+      console.log("[App] Background music started with fade-in");
+    } catch (error) {
+      console.log(
+        "[App] Auto-play blocked, waiting for user interaction:",
+        error.message,
+      );
+      // Add a one-time click listener to start music
+      const startMusicOnClick = async () => {
+        try {
+          await backgroundMusic.play();
+          fadeInAudio();
+          console.log("[App] Background music started after user interaction with fade-in");
+          document.removeEventListener("click", startMusicOnClick);
+        } catch (err) {
+          console.log("[App] Failed to start music:", err.message);
+        }
+      };
+      document.addEventListener("click", startMusicOnClick);
+    }
+  };
+
+  // Mute/unmute toggle
+  audioToggle.addEventListener("click", (e) => {
+    e.stopPropagation(); // Prevent triggering any parent click handlers
+
+    isMuted = !isMuted;
+    backgroundMusic.muted = isMuted;
+
+    // Update icon
+    volumeIcon.className = isMuted ? "fas fa-volume-mute" : "fas fa-volume-up";
+
+    // Update tooltip
+    audioToggle.title = isMuted
+      ? "Unmute background music"
+      : "Mute background music";
+
+    console.log(`[App] Background music ${isMuted ? "muted" : "unmuted"}`);
+  });
+
+  // Try to start music
+  tryPlayMusic();
+
+  console.log("[App] Background music system initialized");
 }

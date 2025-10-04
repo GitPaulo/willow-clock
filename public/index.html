@@ -7,6 +7,7 @@
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file:; connect-src 'self' data:; worker-src blob:; object-src 'none';" />
   <title>Willow Clock</title>
+  <link rel="stylesheet" href="../node_modules/@fortawesome/fontawesome-free/css/all.min.css">
   <style>
     @font-face {
       font-family: "PawFont";
@@ -37,7 +38,7 @@
           #8b8b8b 100%
         );
       */
-      background: #fac68f;
+      background: #ff921e;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -293,6 +294,20 @@
       box-shadow: none;
     }
 
+    .mode-controls button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .mode-controls button:disabled:hover {
+      transform: none;
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: none;
+    }
+
     /* Interactive element hover priority */
     .mode-controls {
       position: relative;
@@ -406,6 +421,39 @@
       }
     }
 
+    /* Audio toggle button */
+    #audio-toggle {
+      position: fixed;
+      top: clamp(12px, 3vw, 20px);
+      right: clamp(12px, 3vw, 20px);
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      width: clamp(28px, 8vw, 40px);
+      height: clamp(28px, 8vw, 40px);
+      color: white;
+      font-size: clamp(12px, 3vw, 16px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+      z-index: 1001;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    #audio-toggle:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px) scale(1.05);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    #audio-toggle:active {
+      transform: translateY(0) scale(0.98);
+      box-shadow: none;
+    }
+
     /* Cursor Trail Paw Prints */
     .cursor-trail-container {
       position: fixed;
@@ -485,12 +533,12 @@
     }
 
     .paw-toe-outer-left {
-      left: 25%;
+      left: 28%;
       transform: rotate(-15deg);
     }
 
     .paw-toe-outer-right {
-      right: 25%;
+      right: 28%;
       transform: rotate(15deg);
     }
 
@@ -503,12 +551,12 @@
     }
 
     .paw-toe-inner-left {
-      left: 10%;
+      left: 8%;
       transform: rotate(-30deg);
     }
 
     .paw-toe-inner-right {
-      right: 10%;
+      right: 8%;
       transform: rotate(30deg);
     }
 
@@ -538,7 +586,7 @@
       <input id="timer-input" type="text" value="00:05:00" maxlength="8" />
       <div class="mode-controls">
         <button id="timer-edit" title="Lock/Unlock timer for editing">
-          🔒
+          Lock
         </button>
         <button id="timer-start">Start</button>
         <button id="timer-stop">Stop</button>
@@ -552,6 +600,17 @@
     </div>
   </div>
   <div id="pixi-container"></div>
+
+  <!-- Audio Controls -->
+  <button id="audio-toggle" title="Toggle background music">
+    <i class="fas fa-volume-up" id="volume-icon"></i>
+  </button>
+
+  <!-- Background Music -->
+  <audio id="background-music" loop preload="auto" crossorigin="anonymous">
+    <source src="../assets/audio/backtrack.wav" type="audio/wav">
+    Your browser does not support the audio element.
+  </audio>
 
   <div id="info">
     Electron: <span id="electron-version"></span> | Node:
