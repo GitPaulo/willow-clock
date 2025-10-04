@@ -2,14 +2,94 @@ import js from "@eslint/js";
 import prettier from "eslint-plugin-prettier/recommended";
 
 export default [
-  { ignores: ["dist"] },
+  { ignores: ["dist", "build", "public/pixi.js"] },
+  js.configs.recommended,
+  prettier,
   {
-    extends: [js.configs.recommended, prettier],
-    files: ["**/*.{js,jsx}"],
+    // Main Electron process (Node.js environment)
+    files: ["main.js", "src/audio/**/*.js"],
     languageOptions: {
-      ecmaVersion: "latest",
+      ecmaVersion: 2022,
       sourceType: "module",
+      globals: {
+        process: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly",
+        console: "readonly",
+        Buffer: "readonly",
+        global: "readonly",
+        require: "readonly",
+        module: "readonly",
+        exports: "readonly",
+      },
     },
-    rules: {},
+    rules: {
+      "no-console": "off", // Electron apps often need console for debugging
+    },
+  },
+  {
+    // Preload script (CommonJS, Node + DOM APIs)
+    files: ["src/preload.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "commonjs",
+      globals: {
+        process: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly",
+        console: "readonly",
+        Buffer: "readonly",
+        global: "readonly",
+        require: "readonly",
+        module: "readonly",
+        exports: "readonly",
+        // DOM globals for preload
+        document: "readonly",
+        window: "readonly",
+      },
+    },
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
+    // Renderer process (Browser environment)
+    files: [
+      "src/app.js",
+      "src/renderer.js",
+      "src/utils.js",
+      "src/state-machine.js",
+      "src/audio/system-audio.js",
+      "src/effects/**/*.js",
+    ],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        // Standard browser globals
+        document: "readonly",
+        window: "readonly",
+        console: "readonly",
+        setTimeout: "readonly",
+        setInterval: "readonly",
+        clearTimeout: "readonly",
+        clearInterval: "readonly",
+        localStorage: "readonly",
+        sessionStorage: "readonly",
+        fetch: "readonly",
+        URL: "readonly",
+        URLSearchParams: "readonly",
+        requestAnimationFrame: "readonly",
+        cancelAnimationFrame: "readonly",
+        // Electron renderer globals (exposed via contextBridge)
+        audioAPI: "readonly",
+        // PIXI.js globals (if used)
+        PIXI: "readonly",
+      },
+    },
+    rules: {
+      "no-console": "off", // Allow console in development
+      "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+    },
   },
 ];

@@ -1,4 +1,11 @@
-import { Application, Assets, Texture, Rectangle, AnimatedSprite, Text } from "../public/pixi.js";
+import {
+  Application,
+  Assets,
+  Texture,
+  Rectangle,
+  AnimatedSprite,
+  Text,
+} from "../public/pixi.js";
 import {
   initializeApp,
   setupAudioDetection,
@@ -20,7 +27,7 @@ const SPRITE_CONFIG = {
     frameHeight: 128,
     speed: 0.08,
     loop: true,
-    scale: 2.5
+    scale: 2.5,
   },
   night: {
     path: "../assets/animations/sprite_night.png",
@@ -29,7 +36,7 @@ const SPRITE_CONFIG = {
     frameHeight: 128,
     speed: 0.08,
     loop: true,
-    scale: 2.5
+    scale: 2.5,
   },
   music: {
     path: "../assets/animations/sprite_music.png",
@@ -38,7 +45,7 @@ const SPRITE_CONFIG = {
     frameHeight: 128,
     speed: 0.18,
     loop: true,
-    scale: 2.5
+    scale: 2.5,
   },
   pet: {
     path: "../assets/animations/sprite_pet.png",
@@ -47,7 +54,7 @@ const SPRITE_CONFIG = {
     frameHeight: 128,
     speed: 0.12,
     loop: false,
-    scale: 2.5
+    scale: 2.5,
   },
 };
 
@@ -60,12 +67,13 @@ async function loadSpriteAssets() {
 
   const assetsToLoad = Object.entries(SPRITE_CONFIG).map(([state, config]) => ({
     alias: state,
-    src: config.path
+    src: config.path,
   }));
 
   await Assets.load(assetsToLoad);
   console.log("[Renderer] Sprite sheets loaded successfully");
-} function createFramesFromSpriteSheet(state, config) {
+}
+function createFramesFromSpriteSheet(state, config) {
   const baseTexture = Assets.get(state);
   const frames = [];
 
@@ -74,7 +82,7 @@ async function loadSpriteAssets() {
       i * config.frameWidth,
       0,
       config.frameWidth,
-      config.frameHeight
+      config.frameHeight,
     );
     frames.push(new Texture({ source: baseTexture.source, frame }));
   }
@@ -104,19 +112,21 @@ function createSprites(app, centerX, centerY) {
   for (const [state, config] of Object.entries(SPRITE_CONFIG)) {
     sprites[state] = createAnimatedSpriteAt(state, config, centerX, centerY);
     app.stage.addChild(sprites[state]);
-    console.log(`[Renderer] Created sprite '${state}': ${config.frames} frames, speed=${config.speed}, loop=${config.loop}`);
+    console.log(
+      `[Renderer] Created sprite '${state}': ${config.frames} frames, speed=${config.speed}, loop=${config.loop}`,
+    );
   }
 
   return sprites;
 }
 
 function switchToSprite(sprites, state) {
-  Object.values(sprites).forEach(s => s.visible = false);
+  Object.values(sprites).forEach((s) => (s.visible = false));
   if (sprites[state]) sprites[state].visible = true;
 }
 
 function repositionSprites(sprites, centerX, centerY) {
-  Object.values(sprites).forEach(sprite => {
+  Object.values(sprites).forEach((sprite) => {
     sprite.x = centerX;
     sprite.y = centerY;
   });

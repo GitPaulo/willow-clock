@@ -8,7 +8,10 @@ function initSystemAudio(window) {
   mainWindow = window;
 
   const os = platform();
-  console.log("[MainAudio] Initializing system audio detection for platform:", os);
+  console.log(
+    "[MainAudio] Initializing system audio detection for platform:",
+    os,
+  );
 
   try {
     if (os === "win32") {
@@ -60,7 +63,10 @@ function startWindowsAudioDetection() {
   });
 
   audioProcess.on("error", (error) => {
-    console.log("[MainAudio] ERROR: Windows audio detection failed:", error.message);
+    console.log(
+      "[MainAudio] ERROR: Windows audio detection failed:",
+      error.message,
+    );
   });
 
   return true;
@@ -88,8 +94,13 @@ function startLinuxAudioDetection() {
   });
 
   audioProcess.on("error", (error) => {
-    console.log("[MainAudio] ERROR: Linux audio detection failed:", error.message);
-    console.log("[MainAudio] Install required package: sudo apt install pulseaudio-utils");
+    console.log(
+      "[MainAudio] ERROR: Linux audio detection failed:",
+      error.message,
+    );
+    console.log(
+      "[MainAudio] Install required package: sudo apt install pulseaudio-utils",
+    );
   });
 
   return true;
@@ -99,7 +110,9 @@ function startLinuxAudioDetection() {
 function updateAudioState(newState) {
   if (isAudioActive !== newState) {
     isAudioActive = newState;
-    console.log(`[MainAudio] Audio state changed: ${newState ? "playing" : "stopped"}`);
+    console.log(
+      `[MainAudio] Audio state changed: ${newState ? "playing" : "stopped"}`,
+    );
 
     // Send to renderer process
     if (mainWindow && !mainWindow.isDestroyed()) {
