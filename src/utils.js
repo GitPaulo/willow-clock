@@ -1,4 +1,5 @@
 import { initSystemAudio } from "./audio/system-audio.js";
+import { playTextBeep, initTextSound, isTextAudioReady, getAudioState } from "./audio/text-audio.js";
 import {
   initializeState,
   updateBaseStateFromTime,
@@ -36,8 +37,27 @@ export function handleClick() {
 export function setupTestFunctions() {
   window.testPet = () => triggerPet();
   window.testMusic = () => setMusicActive(true);
+  window.testSpeech = (text) => {
+    if (window.speechBox && window.startTypewriter) {
+      window.startTypewriter(window.speechBox, text || "Hello! This is a test message with typewriter animation.");
+    }
+  };
+  window.testSpeechCategory = (category) => {
+    if (window.speechBox && window.startTypewriter && window.getRandomSpeech) {
+      const message = window.getRandomSpeech(category) || `No messages for category: ${category}`;
+      window.startTypewriter(window.speechBox, message);
+    }
+  };
+  window.testTextBeep = () => {
+    initTextSound(); // Ensure audio is initialized
+    playTextBeep();
+  };
+  window.testAudioStatus = () => {
+    console.log("[TextAudio] Status:", getAudioState());
+    return getAudioState();
+  };
   console.log(
-    "[Utils] Test functions available: testPet(), testMusic(), T key for audio toggle",
+    "[Utils] Test functions available: testPet(), testMusic(), testSpeech('message'), testTextBeep(), testAudioStatus()",
   );
 }
 

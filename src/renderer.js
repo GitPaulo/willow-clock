@@ -5,6 +5,8 @@ import {
   Rectangle,
   AnimatedSprite,
   Text,
+  Graphics,
+  Container,
 } from "../public/pixi.js";
 import {
   initializeApp,
@@ -13,6 +15,7 @@ import {
   setupTestFunctions,
 } from "./utils.js";
 import { onStateChange, getCurrentState } from "./state-machine.js";
+import { initTextSound, playTextBeep, playTextBeepSoft, isTextAudioReady } from "./audio/text-audio.js";
 
 // Sprite sheet configuration - add new sprites here
 // Each sprite sheet should be a horizontal strip of frames (128px height)
@@ -56,6 +59,57 @@ const SPRITE_CONFIG = {
     loop: false,
     scale: 2.5,
   },
+};
+
+// Speech box configuration
+const SPEECH_CONFIG = {
+  width: 320, // Wider and more rectangular
+  backgroundColor: 0x2c2a2f, // Dark grey matching titlebar
+  borderColor: 0xffffff,
+  borderAlpha: 0.2,
+  borderWidth: 1,
+  cornerRadius: 6, // Less rounded for more rectangular look
+  padding: 12,
+  bottomMargin: 20, // Margin from bottom edge
+  textStyle: {
+    fontFamily: "PencilFont, Arial",
+    fontSize: 14,
+    fill: 0xffffff,
+    align: "left",
+    wordWrap: true,
+    wordWrapWidth: 296, // width - (padding * 2)
+    lineHeight: 18,
+  },
+  typewriterSpeed: 50, // milliseconds per character
+  soundEnabled: true, // Enable typewriter sound effects
+  get height() {
+    return this.textStyle.lineHeight + (this.padding * 2); // Height based on line height + padding
+  },
+};
+
+// Sample speech messages for different states/events
+const SPEECH_MESSAGES = {
+  greeting: [
+    "Hello there! Nice to see you!",
+    "Good to have you here!",
+    "Welcome back, friend!",
+  ],
+  pet: [
+    "That tickles!",
+    "Hehe, that feels nice!",
+    "More pets please!",
+    "I love attention!",
+  ],
+  music: [
+    "I can hear the music too!",
+    "This beat is catchy!",
+    "Music makes everything better!",
+  ],
+  time: [
+    "Time keeps flowing...",
+    "Another moment passes by.",
+    "Tick tock, tick tock...",
+  ],
 };
 
 initializeApp();
@@ -132,21 +186,99 @@ function repositionSprites(sprites, centerX, centerY) {
   });
 }
 
-function createTitle(x, y) {
-  const text = new Text({
-    text: "Test speech!",
-    style: {
-      fontFamily: "PencilFont, Arial",
-      fontSize: 20,
-      fill: 0xffffff,
-      align: "center",
-    },
+function createSpeechBox(x, y) {
+  const container = new Container();
+
+  // Create background with rounded rectangle
+  const background = new Graphics();
+  background
+    .rect(0, 0, SPEECH_CONFIG.width, SPEECH_CONFIG.height)
+    .fill({ color: SPEECH_CONFIG.backgroundColor })
+    .stroke({
+      color: SPEECH_CONFIG.borderColor,
+      alpha: SPEECH_CONFIG.borderAlpha,
+      width: SPEECH_CONFIG.borderWidth
+    });
+
+  // Create text object
+  const textObj = new Text({
+    text: "",
+    style: SPEECH_CONFIG.textStyle,
   });
-  text.anchor.set(0.5);
-  text.x = x;
-  text.y = y;
-  return text;
+  textObj.x = SPEECH_CONFIG.padding;
+  textObj.y = SPEECH_CONFIG.padding;
+
+  // Add to container
+  container.addChild(background);
+  container.addChild(textObj);
+
+  // Position container
+  container.x = x - SPEECH_CONFIG.width / 2;
+  container.y = y;
+  container.visible = false;
+
+  // Add typewriter functionality
+  container.typewriterData = {
+    fullText: "",
+    currentText: "",
+    currentIndex: 0,
+    isTyping: false,
+    textObj: textObj,
+  };
+
+  return container;
 }
+
+function getRandomSpeech(category) {
+  const messages = SPEECH_MESSAGES[category];
+  if (!messages || messages.length === 0) return "";
+  return messages[Math.floor(Math.random() * messages.length)];
+}
+
+function startTypewriter(speechBox, text) {
+  const data = speechBox.typewriterData;
+
+  // Reset if already typing
+  if (data.isTyping) {
+    clearInterval(data.typewriterInterval);
+  }
+
+  data.fullText = text;
+  data.currentText = "";
+  data.currentIndex = 0;
+  data.isTyping = true;
+  data.textObj.text = "";
+  speechBox.visible = true;
+
+  data.typewriterInterval = setInterval(() => {
+    if (data.currentIndex < data.fullText.length) {
+      const char = data.fullText[data.currentIndex];
+      data.currentText += char;
+      data.textObj.text = data.currentText;
+      data.currentIndex++;
+
+      // Play sound effect for visible characters (not spaces)
+      if (SPEECH_CONFIG.soundEnabled && char !== " " && char !== "\n") {
+        playTextBeepSoft();
+      }
+    } else {
+      clearInterval(data.typewriterInterval);
+      data.isTyping = false;
+
+      // Auto-hide based on word count (min 2 seconds, +0.5s per word)
+      const wordCount = data.fullText.trim().split(/\s+/).length;
+      const fadeDelay = Math.max(2000, wordCount * 500); // 500ms per word, min 2s
+
+      setTimeout(() => {
+        if (!data.isTyping) {
+          speechBox.visible = false;
+        }
+      }, fadeDelay);
+    }
+  }, SPEECH_CONFIG.typewriterSpeed);
+}
+
+
 
 function updateStateInfo(state) {
   const element = document.getElementById("state-info");
@@ -172,7 +304,11 @@ async function initPixi() {
     container.appendChild(app.canvas);
     container.style.background = "rgba(255, 255, 255, 0.15)";
     app.canvas.style.cursor = "pointer";
-    app.canvas.addEventListener("click", handleClick);
+    app.canvas.addEventListener("click", (event) => {
+      // Initialize text audio on first click (required for browser autoplay policy)
+      initTextSound();
+      handleClick(event);
+    });
 
     let centerX = width / 2;
     let centerY = height / 2;
@@ -181,21 +317,35 @@ async function initPixi() {
     const sprites = createSprites(app, centerX, centerY);
     switchToSprite(sprites, getCurrentState());
 
-    const title = createTitle(centerX, centerY + height * 0.25);
-    app.stage.addChild(title);
+
+
+    const speechBox = createSpeechBox(centerX, height - SPEECH_CONFIG.height - SPEECH_CONFIG.bottomMargin);
+    app.stage.addChild(speechBox);
+
+    // Expose globally for testing and external use
+    window.speechBox = speechBox;
+    window.startTypewriter = startTypewriter;
+    window.getRandomSpeech = getRandomSpeech;
 
     app.renderer.on("resize", () => {
       centerX = app.screen.width / 2;
       centerY = app.screen.height / 2;
-      title.x = centerX;
-      title.y = centerY + app.screen.height * 0.25;
       repositionSprites(sprites, centerX, centerY);
+      speechBox.x = centerX - SPEECH_CONFIG.width / 2;
+      speechBox.y = app.screen.height - SPEECH_CONFIG.height - SPEECH_CONFIG.bottomMargin;
     });
 
     onStateChange((newState) => {
       console.log(`[Renderer] State changed to: ${newState}`);
       switchToSprite(sprites, newState);
       updateStateInfo(newState);
+
+      // Trigger speech for certain state changes
+      if (newState === 'pet') {
+        startTypewriter(speechBox, getRandomSpeech('pet'));
+      } else if (newState === 'music') {
+        startTypewriter(speechBox, getRandomSpeech('music'));
+      }
     });
 
     updateStateInfo(getCurrentState());
