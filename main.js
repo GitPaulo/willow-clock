@@ -22,6 +22,7 @@ function createWindow() {
     frame: false, // fully custom window
     resizable: true,
     show: false, // show only when ready
+    icon: path.join(__dirname, "assets/icons/app-icon.png"), // app icon
     backgroundColor: "#00000000", // transparent background (for CSS radius)
     transparent: true, // allow rounded corners to be visible
     webPreferences: {

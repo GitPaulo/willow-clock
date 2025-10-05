@@ -31,7 +31,7 @@
         Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #ff921e;
+      background: transparent;
       display: flex;
       flex-direction: column;
       height: 100vh;
@@ -45,6 +45,10 @@
     .content-area {
       flex: 1;
       padding: 15px;
+      background-color: #ff921e;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-top: none;
+      border-radius: 0 0 12px 12px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -540,6 +544,9 @@
       align-items: center;
       background-color: rgb(44 42 47);
       backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
       -webkit-app-region: drag;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
