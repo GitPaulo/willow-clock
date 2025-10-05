@@ -157,8 +157,8 @@ async function initPixi() {
   console.log("[Renderer] Initializing PIXI.js...");
   try {
     const container = document.getElementById("pixi-container");
-    const width = Math.floor(container.getBoundingClientRect().width) || 320;
-    const height = Math.floor(container.getBoundingClientRect().height) || 240;
+    const width = Math.max(Math.floor(container.getBoundingClientRect().width) || 340, 340);
+    const height = Math.max(Math.floor(container.getBoundingClientRect().height) || 220, 220);
 
     const app = new Application();
     await app.init({

@@ -1,7 +1,7 @@
 # Willow Clock
 
-:3 
- 
+:3
+
 ## Prerequisites
 
 - Node.js 18 or higher
@@ -65,15 +65,18 @@ electron-builder --mac
 ### Testing Built Applications
 
 **Linux (after `npm run pack`):**
+
 ```bash
 ./dist/linux-unpacked/willow-clock
 ```
 
 **Windows (after building .exe):**
+
 - Run the installer from `dist/` directory
 - Or execute the portable version directly
 
 **Automated Testing:**
+
 ```bash
 # Build and test in one command
 npm run pack && ./dist/linux-unpacked/willow-clock

@@ -11,30 +11,71 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function createWindow() {
-  const mainWindow = new BrowserWindow({
-    width: 324,
-    height: 380,
+  const isWindows = process.platform === "win32";
+  const isMacOS = process.platform === "darwin";
+  const isLinux = process.platform === "linux";
+
+  /** @type {Electron.BrowserWindowConstructorOptions} */
+  const windowConfig = {
+    width: 470,
+    height: 500,
+    frame: false, // fully custom window
+    resizable: true,
+    show: false, // show only when ready
+    backgroundColor: "#00000000", // transparent background (for CSS radius)
+    transparent: true, // allow rounded corners to be visible
     webPreferences: {
       preload: path.join(__dirname, "src/preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
-      allowRunningInsecureContent: false,
+      sandbox: false,
     },
-  });
+  };
+
+  if (isMacOS) {
+    windowConfig.titleBarStyle = "hiddenInset";
+    windowConfig.roundedCorners = true;
+    windowConfig.vibrancy = "under-window";
+  } else if (isWindows) {
+    windowConfig.roundedCorners = true;
+    // keep transparency for custom border-radius
+  } else if (isLinux) {
+    windowConfig.titleBarStyle = "hidden";
+    // transparency works but no native shadow on most WMs
+  }
+
+  const mainWindow = new BrowserWindow(windowConfig);
 
   mainWindow.loadFile("public/index.html");
 
-  mainWindow.webContents.openDevTools();
-  ipcMain.handle("start-audio-detection", () => {
-    return initSystemAudio(mainWindow);
+  mainWindow.once("ready-to-show", () => {
+    mainWindow.show();
+    if (isMacOS) mainWindow.focus();
   });
 
-  ipcMain.handle("toggle-audio-detection", () => {
-    return toggleSystemAudio();
+  // Open DevTools only in dev env
+  if (!app.isPackaged) mainWindow.webContents.openDevTools({ mode: "detach" });
+
+  // IPC Handlers
+  ipcMain.handle("start-audio-detection", () => initSystemAudio(mainWindow));
+  ipcMain.handle("toggle-audio-detection", () => toggleSystemAudio());
+  ipcMain.handle("stop-audio-detection", () => stopSystemAudio());
+
+  // Window controls (from preload)
+  ipcMain.on("window:minimize", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    win?.minimize();
   });
 
-  ipcMain.handle("stop-audio-detection", () => {
-    stopSystemAudio();
+  ipcMain.on("window:close", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    win?.close();
+  });
+
+  ipcMain.on("window:maximize", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return;
+    win.isMaximized() ? win.unmaximize() : win.maximize();
   });
 
   return mainWindow;
@@ -44,15 +85,11 @@ app.whenReady().then(() => {
   createWindow();
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
 app.on("window-all-closed", () => {
   stopSystemAudio();
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+  if (process.platform !== "darwin") app.quit();
 });

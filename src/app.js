@@ -1,19 +1,26 @@
 import { CursorTrail } from "./effects/cursor-trail.js";
+import {
+  MODE,
+  MODES,
+  getElements,
+  toggleHoverStates,
+  fadeVolume,
+  formatTime,
+} from "./utils.js";
 
-const MODES = ["clock-mode", "stopwatch", "timer", "focus"];
-
-let currentModeIndex = 0;
-let stopwatchInterval = null;
-let stopwatchTime = 0;
-let timerInterval = null;
-let timerRemaining = 0;
-let focusInterval = null;
-let focusTime = 0;
-let cursorTrail = null;
+let activeModeIndex = 0;
+let stopwatchIntervalId = null;
+let stopwatchElapsedTime = 0;
+let timerIntervalId = null;
+let timerRemainingTime = 0;
+let focusIntervalId = null;
+let focusElapsedTime = 0;
+let cursorTrailInstance = null;
 let backgroundMusic = null;
 let isMuted = false;
 
 document.addEventListener("DOMContentLoaded", () => {
+  setupLoadingScreen();
   setupModeSystem();
   setupStopwatch();
   setupTimer();
@@ -22,419 +29,369 @@ document.addEventListener("DOMContentLoaded", () => {
   setupBackgroundMusic();
 });
 
+function setupLoadingScreen() {
+  const loadingScreenElement = document.getElementById("loading-screen");
+  const loadingTextElement = document.querySelector(".loading-text");
+  if (!loadingScreenElement) return;
+
+  console.log("[Loading] Screen setup started");
+
+  // Initial text fade in
+  if (loadingTextElement) {
+    loadingTextElement.style.opacity = "0";
+    setTimeout(() => {
+      loadingTextElement.style.transition = "opacity 0.5s ease";
+      loadingTextElement.style.opacity = "1";
+    }, 100);
+  }
+
+  const DISPLAY_DURATION = 2500; // Show for 2.5s
+  const FADE_DURATION = 600; // Slightly longer fade
+  const FADE_STEPS = 30; // More steps for smoother fade
+  const STEP_DELAY = FADE_DURATION / FADE_STEPS;
+
+  setTimeout(() => {
+    console.log("[Loading] Starting synchronized fade");
+
+    // Start background music
+    startBackgroundMusic();
+
+    let currentOpacity = 1;
+    const opacityStep = 1 / FADE_STEPS;
+
+    const fadeInterval = setInterval(() => {
+      currentOpacity -= opacityStep;
+
+      if (currentOpacity <= 0) {
+        console.log("[Loading] Fade complete, hiding screen");
+        loadingScreenElement.style.opacity = "0";
+        setTimeout(() => {
+          loadingScreenElement.style.display = "none";
+        }, 50); // Small delay to ensure opacity is fully applied
+        clearInterval(fadeInterval);
+      } else {
+        // Fade both screen and text together
+        loadingScreenElement.style.opacity = currentOpacity.toString();
+        if (loadingTextElement) {
+          loadingTextElement.style.opacity = currentOpacity.toString();
+        }
+      }
+    }, STEP_DELAY);
+  }, DISPLAY_DURATION);
+}
+
+async function startBackgroundMusic() {
+  if (!backgroundMusic) return;
+
+  try {
+    await backgroundMusic.play();
+    fadeVolume(backgroundMusic, 0.08);
+  } catch (error) {
+    console.log("[App] Auto-play blocked:", error.message);
+  }
+}
+
 function setupCursorTrail() {
-  cursorTrail = new CursorTrail();
-  cursorTrail.init();
-  window.cursorTrail = cursorTrail;
-  console.log("[App] Cursor trail initialized");
+  cursorTrailInstance = new CursorTrail();
+  cursorTrailInstance.init();
+  window.cursorTrail = cursorTrailInstance;
+}
+
+function setupBackgroundMusic() {
+  const elements = getElements([
+    "background-music",
+    "audio-toggle",
+    "volume-icon",
+  ]);
+  backgroundMusic = elements["background-music"];
+  const { "audio-toggle": audioToggle, "volume-icon": volumeIcon } = elements;
+
+  if (!backgroundMusic || !audioToggle || !volumeIcon) return;
+
+  Object.assign(backgroundMusic, {
+    volume: 0.08,
+    preservesPitch: false,
+    mozPreservesPitch: false,
+    webkitPreservesPitch: false,
+    playbackRate: 1.0,
+    defaultPlaybackRate: 1.0,
+    preload: "auto",
+    crossOrigin: "anonymous",
+  });
+
+  backgroundMusic.addEventListener("error", (e) => {
+    console.warn("[App] Audio loading error:", e.target.error);
+  });
+
+  audioToggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    isMuted = !isMuted;
+    backgroundMusic.muted = isMuted;
+
+    volumeIcon.className = isMuted ? "fas fa-volume-mute" : "fas fa-volume-up";
+    audioToggle.title = `${isMuted ? "Unmute" : "Mute"} background music`;
+  });
 }
 
 function setupModeSystem() {
-  const modeContainer = document.getElementById("mode");
-  const clock = document.getElementById("clock");
-  const date = document.getElementById("date");
+  const elementIds = [
+    "mode",
+    "clock",
+    "date",
+    "stopwatch-time",
+    "timer-input",
+    "focus-title",
+    "focus-time",
+  ];
+  const allElements = getElements(elementIds);
+  const {
+    mode: modeContainer,
+    "timer-input": timerInputElement,
+    ...hoverableElements
+  } = allElements;
 
-  if (!modeContainer) {
-    console.log("[App] Mode container not found");
-    return;
-  }
+  if (!modeContainer) return;
 
-  // Hover state management - add to all mode elements
-  const stopwatchTime = document.getElementById("stopwatch-time");
-  const timerInput = document.getElementById("timer-input");
-  const focusTitle = document.getElementById("focus-title");
-  const focusTime = document.getElementById("focus-time");
-
-  modeContainer.addEventListener("mouseenter", () => {
-    if (clock) clock.classList.add("hover");
-    if (date) date.classList.add("hover");
-    if (stopwatchTime) stopwatchTime.classList.add("hover");
-    if (timerInput) timerInput.classList.add("hover");
-    if (focusTitle) focusTitle.classList.add("hover");
-    if (focusTime) focusTime.classList.add("hover");
-  });
-
-  modeContainer.addEventListener("mouseleave", () => {
-    if (clock) clock.classList.remove("hover");
-    if (date) date.classList.remove("hover");
-    if (stopwatchTime) stopwatchTime.classList.remove("hover");
-    if (timerInput) timerInput.classList.remove("hover");
-    if (focusTitle) focusTitle.classList.remove("hover");
-    if (focusTime) focusTime.classList.remove("hover");
-  });
-
-  // Prevent mode hover effects when hovering over interactive elements
+  const hoverableTargets = Object.values(hoverableElements).filter(Boolean);
   const interactiveElements = [
     ...modeContainer.querySelectorAll("button"),
     ...modeContainer.querySelectorAll("input"),
     ...modeContainer.querySelectorAll(".mode-controls"),
   ];
 
-  interactiveElements.forEach((element) => {
-    element.addEventListener("mouseenter", (_e) => {
-      _e.stopPropagation();
-      // Remove hover effects from mode elements
-      if (clock) clock.classList.remove("hover");
-      if (date) date.classList.remove("hover");
-      if (stopwatchTime) stopwatchTime.classList.remove("hover");
-      if (timerInput && _e.target !== timerInput)
-        timerInput.classList.remove("hover");
-      if (focusTitle) focusTitle.classList.remove("hover");
-      if (focusTime) focusTime.classList.remove("hover");
+  const allHoverTargets = [...hoverableTargets, timerInputElement];
+
+  modeContainer.addEventListener("mouseenter", () => {
+    toggleHoverStates(allHoverTargets, "add");
+  });
+
+  modeContainer.addEventListener("mouseleave", () => {
+    toggleHoverStates(allHoverTargets, "remove");
+  });
+
+  interactiveElements.forEach((interactiveElement) => {
+    interactiveElement.addEventListener("mouseenter", (event) => {
+      event.stopPropagation();
+      const shouldKeepTimerHover = event.target === timerInputElement;
+      const elementsToUnhover = shouldKeepTimerHover
+        ? hoverableTargets
+        : allHoverTargets;
+      toggleHoverStates(elementsToUnhover, "remove");
     });
 
-    element.addEventListener("mouseleave", (_e) => {
-      // Re-add hover effects if still hovering over mode container
-      if (modeContainer.matches(":hover")) {
-        if (clock) clock.classList.add("hover");
-        if (date) date.classList.add("hover");
-        if (stopwatchTime) stopwatchTime.classList.add("hover");
-        if (timerInput) timerInput.classList.add("hover");
-        if (focusTitle) focusTitle.classList.add("hover");
-        if (focusTime) focusTime.classList.add("hover");
+    interactiveElement.addEventListener("mouseleave", () => {
+      const isStillHoveringMode = modeContainer.matches(":hover");
+      if (isStillHoveringMode) {
+        toggleHoverStates(allHoverTargets, "add");
       }
     });
   });
 
-  // Click handler - switch modes (but not when clicking interactive elements)
-  modeContainer.addEventListener("click", (e) => {
-    // Check if the clicked element or any of its parents are interactive
-    let target = e.target;
-    while (target && target !== modeContainer) {
-      // Don't switch mode if clicking on interactive elements
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "BUTTON" ||
-        target.classList.contains("mode-controls") ||
-        target.hasAttribute("contenteditable")
-      ) {
-        return;
-      }
-      target = target.parentElement;
+  modeContainer.addEventListener("click", (event) => {
+    const clickedOnInteractiveElement = hasInteractiveAncestor(
+      event.target,
+      modeContainer,
+    );
+    if (!clickedOnInteractiveElement) {
+      switchMode();
     }
-
-    switchMode();
   });
+}
 
-  console.log("[App] Mode system initialized");
+function hasInteractiveAncestor(element, container) {
+  const isInteractive = (el) =>
+    ["INPUT", "BUTTON"].includes(el.tagName) ||
+    el.classList.contains("mode-controls") ||
+    el.hasAttribute("contenteditable");
+
+  for (
+    let current = element;
+    current && current !== container;
+    current = current.parentElement
+  ) {
+    if (isInteractive(current)) return true;
+  }
+  return false;
 }
 
 function switchMode() {
-  const previousMode = MODES[currentModeIndex];
+  const currentModeName = MODES[activeModeIndex];
 
-  // Stop focus timer if leaving focus mode
-  if (previousMode === "focus") {
-    stopFocusTimer();
-  }
+  if (currentModeName === MODE.FOCUS) stopFocusTimer();
 
-  // Hide current mode
-  const currentMode = document.getElementById(MODES[currentModeIndex]);
-  if (currentMode) currentMode.classList.remove("active");
+  document.getElementById(currentModeName)?.classList.remove("active");
 
-  // Move to next mode
-  currentModeIndex = (currentModeIndex + 1) % MODES.length;
-  const newModeName = MODES[currentModeIndex];
+  activeModeIndex = (activeModeIndex + 1) % MODES.length;
+  const nextModeName = MODES[activeModeIndex];
 
-  // Show new mode
-  const newMode = document.getElementById(newModeName);
-  if (newMode) newMode.classList.add("active");
+  document.getElementById(nextModeName)?.classList.add("active");
 
-  // Auto-start focus timer if entering focus mode
-  if (newModeName === "focus") {
-    startFocusTimer();
-  }
-
-  console.log(`[App] Switched to mode: ${newModeName}`);
+  if (nextModeName === MODE.FOCUS) startFocusTimer();
 }
-
 function setupStopwatch() {
-  const startBtn = document.getElementById("stopwatch-start");
-  const resetBtn = document.getElementById("stopwatch-reset");
-  const timeDisplay = document.getElementById("stopwatch-time");
+  const stopwatchElements = getElements([
+    "stopwatch-start",
+    "stopwatch-reset",
+    "stopwatch-time",
+  ]);
+  const {
+    "stopwatch-start": startButton,
+    "stopwatch-reset": resetButton,
+    "stopwatch-time": timeDisplayElement,
+  } = stopwatchElements;
 
-  if (!startBtn || !resetBtn || !timeDisplay) return;
+  if (!startButton || !resetButton || !timeDisplayElement) return;
 
-  startBtn.addEventListener("click", () => {
-    if (stopwatchInterval) {
-      // Pause
-      clearInterval(stopwatchInterval);
-      stopwatchInterval = null;
-      startBtn.textContent = "Start";
+  const updateStopwatchDisplay = () => {
+    const centiseconds = Math.floor((stopwatchElapsedTime % 1000) / 10);
+    const seconds = Math.floor(stopwatchElapsedTime / 1000) % 60;
+    const minutes = Math.floor(stopwatchElapsedTime / 60000) % 60;
+    const hours = Math.floor(stopwatchElapsedTime / 3600000);
+    const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
+    timeDisplayElement.textContent = formattedTime;
+  };
+
+  const isStopwatchRunning = () => stopwatchIntervalId !== null;
+
+  startButton.addEventListener("click", () => {
+    if (isStopwatchRunning()) {
+      pauseStopwatch();
     } else {
-      // Start
-      stopwatchInterval = setInterval(() => {
-        stopwatchTime += 10;
-        updateStopwatchDisplay();
-      }, 10);
-      startBtn.textContent = "Pause";
+      startStopwatch();
     }
   });
 
-  resetBtn.addEventListener("click", () => {
-    stopwatchTime = 0;
+  resetButton.addEventListener("click", () => {
+    resetStopwatch();
+  });
+
+  function startStopwatch() {
+    const UPDATE_INTERVAL = 10;
+    stopwatchIntervalId = setInterval(() => {
+      stopwatchElapsedTime += UPDATE_INTERVAL;
+      updateStopwatchDisplay();
+    }, UPDATE_INTERVAL);
+    startButton.textContent = "Pause";
+  }
+
+  function pauseStopwatch() {
+    clearInterval(stopwatchIntervalId);
+    stopwatchIntervalId = null;
+    startButton.textContent = "Start";
+  }
+
+  function resetStopwatch() {
+    stopwatchElapsedTime = 0;
     updateStopwatchDisplay();
-    if (stopwatchInterval) {
-      clearInterval(stopwatchInterval);
-      stopwatchInterval = null;
-      startBtn.textContent = "Start";
+    if (isStopwatchRunning()) {
+      pauseStopwatch();
     }
-  });
-
-  function updateStopwatchDisplay() {
-    const ms = Math.floor((stopwatchTime % 1000) / 10);
-    const seconds = Math.floor(stopwatchTime / 1000) % 60;
-    const minutes = Math.floor(stopwatchTime / 60000) % 60;
-    const hours = Math.floor(stopwatchTime / 3600000);
-
-    timeDisplay.textContent = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(ms).padStart(2, "0")}`;
   }
 }
 
 function setupTimer() {
-  const timerInput = document.getElementById("timer-input");
-  const editBtn = document.getElementById("timer-edit");
-  const startBtn = document.getElementById("timer-start");
-  const stopBtn = document.getElementById("timer-stop");
+  const timerElements = getElements([
+    "timer-input",
+    "timer-edit",
+    "timer-start",
+    "timer-stop",
+  ]);
+  const {
+    "timer-input": timerInputElement,
+    "timer-edit": lockToggleButton,
+    "timer-start": startButton,
+    "timer-stop": stopButton,
+  } = timerElements;
 
-  if (!timerInput || !editBtn || !startBtn || !stopBtn) return;
+  if (!timerInputElement || !lockToggleButton || !startButton || !stopButton)
+    return;
 
-  // Timer starts locked by default
   let isTimerLocked = true;
-  timerInput.readOnly = true;
+  timerInputElement.readOnly = true;
+  startButton.disabled = false;
+  stopButton.disabled = false;
 
-  // Initialize start/stop buttons as enabled (since timer is locked)
-  startBtn.disabled = false;
-  stopBtn.disabled = false;
+  const updateTimerDisplay = () => {
+    timerInputElement.value = formatTime(timerRemainingTime);
+  };
 
-  // Lock/unlock functionality
-  editBtn.addEventListener("click", () => {
+  lockToggleButton.addEventListener("click", () => {
     isTimerLocked = !isTimerLocked;
-    timerInput.readOnly = isTimerLocked;
-    editBtn.textContent = isTimerLocked ? "Unlock" : "Lock";
-    editBtn.title = isTimerLocked
-      ? "Click to unlock timer for editing"
-      : "Click to lock timer";
+    timerInputElement.readOnly = isTimerLocked;
+    lockToggleButton.textContent = isTimerLocked ? "Unlock" : "Lock";
+    lockToggleButton.title = `Click to ${isTimerLocked ? "unlock" : "lock"} timer ${isTimerLocked ? "for editing" : ""}`;
 
-    // Enable/disable start/stop buttons based on lock state
-    startBtn.disabled = !isTimerLocked;
-    stopBtn.disabled = !isTimerLocked;
+    startButton.disabled = !isTimerLocked;
+    stopButton.disabled = !isTimerLocked;
 
-    if (!isTimerLocked) {
-      // Focus input when unlocked
-      setTimeout(() => timerInput.focus(), 100);
-    }
-
-    console.log(
-      `[App] Timer ${isTimerLocked ? "locked" : "unlocked"} - Start/Stop buttons ${isTimerLocked ? "enabled" : "disabled"}`,
-    );
+    if (!isTimerLocked) setTimeout(() => timerInputElement.focus(), 100);
   });
 
-  startBtn.addEventListener("click", () => {
-    if (timerInterval) return; // Already running
-    if (!isTimerLocked) return; // Can't start when unlocked/editing
+  startButton.addEventListener("click", () => {
+    if (timerIntervalId || !isTimerLocked) return;
 
-    // Parse input (HH:MM:SS)
-    const parts = timerInput.value.split(":").map((p) => parseInt(p) || 0);
-    const hours = parts[0] || 0;
-    const minutes = parts[1] || 0;
-    const seconds = parts[2] || 0;
+    const timeParts = timerInputElement.value
+      .split(":")
+      .map((part) => parseInt(part) || 0);
+    timerRemainingTime =
+      (timeParts[0] * 3600 + timeParts[1] * 60 + timeParts[2]) * 1000;
 
-    timerRemaining = (hours * 3600 + minutes * 60 + seconds) * 1000;
+    if (timerRemainingTime <= 0) return;
 
-    if (timerRemaining <= 0) return;
-
-    // Lock the timer and disable editing during countdown
     const wasLocked = isTimerLocked;
     isTimerLocked = true;
-    timerInput.readOnly = true;
-    editBtn.textContent = "Lock";
-    editBtn.disabled = true;
+    timerInputElement.readOnly = true;
+    lockToggleButton.textContent = "Lock";
+    lockToggleButton.disabled = true;
 
-    timerInterval = setInterval(() => {
-      timerRemaining -= 1000;
+    timerIntervalId = setInterval(() => {
+      timerRemainingTime -= 1000;
 
-      if (timerRemaining <= 0) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-        // Restore previous lock state
+      if (timerRemainingTime <= 0) {
+        clearInterval(timerIntervalId);
+        timerIntervalId = null;
         isTimerLocked = wasLocked;
-        timerInput.readOnly = isTimerLocked;
-        editBtn.textContent = isTimerLocked ? "Lock" : "Unlock";
-        editBtn.disabled = false;
-        console.log("[App] Timer finished!");
-        // TODO: Play sound or notification
+        timerInputElement.readOnly = isTimerLocked;
+        lockToggleButton.textContent = isTimerLocked ? "Unlock" : "Lock";
+        lockToggleButton.disabled = false;
       }
-
       updateTimerDisplay();
     }, 1000);
   });
 
-  stopBtn.addEventListener("click", () => {
-    if (!isTimerLocked) return; // Can't stop when unlocked/editing
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-      // Re-enable edit button
-      editBtn.disabled = false;
-    }
+  stopButton.addEventListener("click", () => {
+    if (!isTimerLocked || !timerIntervalId) return;
+    clearInterval(timerIntervalId);
+    timerIntervalId = null;
+    lockToggleButton.disabled = false;
   });
-
-  function updateTimerDisplay() {
-    const totalSeconds = Math.floor(timerRemaining / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    timerInput.value = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
 }
 
 function setupFocus() {
-  // Focus mode is auto-controlled by switchMode
-  // No buttons needed - starts automatically when mode is entered
+  // Focus mode is auto-controlled by switchMode - no buttons needed
 }
 
 function startFocusTimer() {
-  // Reset timer
-  focusTime = 0;
+  focusElapsedTime = 0;
   updateFocusDisplay();
 
-  // Start counting
-  focusInterval = setInterval(() => {
-    focusTime += 1000;
+  const FOCUS_UPDATE_INTERVAL = 1000;
+  focusIntervalId = setInterval(() => {
+    focusElapsedTime += FOCUS_UPDATE_INTERVAL;
     updateFocusDisplay();
-  }, 1000);
-
-  console.log("[App] Focus timer started");
+  }, FOCUS_UPDATE_INTERVAL);
 }
 
 function stopFocusTimer() {
-  if (focusInterval) {
-    clearInterval(focusInterval);
-    focusInterval = null;
-    console.log(`[App] Focus session ended: ${formatFocusTime()}`);
+  if (focusIntervalId) {
+    clearInterval(focusIntervalId);
+    focusIntervalId = null;
   }
 }
 
 function updateFocusDisplay() {
-  const focusTimeElement = document.getElementById("focus-time");
-  if (focusTimeElement) {
-    focusTimeElement.textContent = formatFocusTime();
+  const focusTimeDisplayElement = document.getElementById("focus-time");
+  if (focusTimeDisplayElement) {
+    focusTimeDisplayElement.textContent = formatTime(focusElapsedTime);
   }
-}
-
-function formatFocusTime() {
-  const totalSeconds = Math.floor(focusTime / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
-function setupBackgroundMusic() {
-  backgroundMusic = document.getElementById("background-music");
-  const audioToggle = document.getElementById("audio-toggle");
-  const volumeIcon = document.getElementById("volume-icon");
-
-  if (!backgroundMusic || !audioToggle || !volumeIcon) {
-    console.log("[App] Background music elements not found");
-    return;
-  }
-
-  // Set very low initial volume to prevent any clipping
-  backgroundMusic.volume = 0.08;
-
-  // Additional audio optimization settings
-  backgroundMusic.preservesPitch = false;
-  backgroundMusic.mozPreservesPitch = false;
-  backgroundMusic.webkitPreservesPitch = false;
-
-  // Set playback rate to exactly 1.0 to prevent pitch/speed artifacts
-  backgroundMusic.playbackRate = 1.0;
-  backgroundMusic.defaultPlaybackRate = 1.0;
-
-  // Ensure proper audio format handling
-  backgroundMusic.preload = "auto";
-  backgroundMusic.crossOrigin = "anonymous";
-
-  // Add event listener to detect audio loading errors
-  backgroundMusic.addEventListener("error", (e) => {
-    console.warn("[App] Audio loading error:", e.target.error);
-  });
-
-  backgroundMusic.addEventListener("canplaythrough", () => {
-    console.log("[App] Audio loaded successfully, ready for smooth playback");
-  });
-
-  // Smooth fade-in function to prevent audio pops/distortion
-  const fadeInAudio = () => {
-    backgroundMusic.volume = 0;
-    const targetVolume = 0.08;
-    const fadeInDuration = 1000; // 1 second
-    const steps = 50;
-    const volumeStep = targetVolume / steps;
-    const timeStep = fadeInDuration / steps;
-
-    let currentStep = 0;
-    const fadeInterval = setInterval(() => {
-      if (currentStep >= steps) {
-        clearInterval(fadeInterval);
-        backgroundMusic.volume = targetVolume;
-        return;
-      }
-
-      backgroundMusic.volume = volumeStep * currentStep;
-      currentStep++;
-    }, timeStep);
-  };
-
-  // Auto-play with user interaction fallback
-  const tryPlayMusic = async () => {
-    try {
-      await backgroundMusic.play();
-      fadeInAudio();
-      console.log("[App] Background music started with fade-in");
-    } catch (error) {
-      console.log(
-        "[App] Auto-play blocked, waiting for user interaction:",
-        error.message,
-      );
-      // Add a one-time click listener to start music
-      const startMusicOnClick = async () => {
-        try {
-          await backgroundMusic.play();
-          fadeInAudio();
-          console.log("[App] Background music started after user interaction with fade-in");
-          document.removeEventListener("click", startMusicOnClick);
-        } catch (err) {
-          console.log("[App] Failed to start music:", err.message);
-        }
-      };
-      document.addEventListener("click", startMusicOnClick);
-    }
-  };
-
-  // Mute/unmute toggle
-  audioToggle.addEventListener("click", (e) => {
-    e.stopPropagation(); // Prevent triggering any parent click handlers
-
-    isMuted = !isMuted;
-    backgroundMusic.muted = isMuted;
-
-    // Update icon
-    volumeIcon.className = isMuted ? "fas fa-volume-mute" : "fas fa-volume-up";
-
-    // Update tooltip
-    audioToggle.title = isMuted
-      ? "Unmute background music"
-      : "Mute background music";
-
-    console.log(`[App] Background music ${isMuted ? "muted" : "unmuted"}`);
-  });
-
-  // Try to start music
-  tryPlayMusic();
-
-  console.log("[App] Background music system initialized");
 }

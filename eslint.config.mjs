@@ -28,11 +28,11 @@ export default [
     },
   },
   {
-    // Preload script (CommonJS, Node + DOM APIs)
+    // Preload script (ES Module, Node + DOM APIs)
     files: ["src/preload.js"],
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: "commonjs",
+      sourceType: "module",
       globals: {
         process: "readonly",
         __dirname: "readonly",
@@ -40,9 +40,6 @@ export default [
         console: "readonly",
         Buffer: "readonly",
         global: "readonly",
-        require: "readonly",
-        module: "readonly",
-        exports: "readonly",
         // DOM globals for preload
         document: "readonly",
         window: "readonly",
@@ -61,6 +58,7 @@ export default [
       "src/state-machine.js",
       "src/audio/system-audio.js",
       "src/effects/**/*.js",
+      "src/window-controls.js",
     ],
     languageOptions: {
       ecmaVersion: 2022,
@@ -83,6 +81,7 @@ export default [
         cancelAnimationFrame: "readonly",
         // Electron renderer globals (exposed via contextBridge)
         audioAPI: "readonly",
+        windowControls: "readonly",
         // PIXI.js globals (if used)
         PIXI: "readonly",
       },

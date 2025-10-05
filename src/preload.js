@@ -1,4 +1,6 @@
-const { contextBridge, ipcRenderer } = require("electron");
+/* eslint-env node */
+
+import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld("audioAPI", {
   startAudio: () => ipcRenderer.invoke("start-audio-detection"),
@@ -9,6 +11,12 @@ contextBridge.exposeInMainWorld("audioAPI", {
       callback(audioActive);
     });
   },
+});
+
+contextBridge.exposeInMainWorld("windowControls", {
+  minimize: () => ipcRenderer.send("window:minimize"),
+  maximize: () => ipcRenderer.send("window:maximize"),
+  close: () => ipcRenderer.send("window:close"),
 });
 
 window.addEventListener("DOMContentLoaded", () => {

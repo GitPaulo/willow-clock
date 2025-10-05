@@ -5,9 +5,9 @@
   <meta charset="UTF-8" />
   <!-- CSP configured for PIXI.js: unsafe-eval for shaders, blob for workers, data/file for images -->
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file:; connect-src 'self' data:; worker-src blob:; object-src 'none';" />
+    content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file:; connect-src 'self' data:; worker-src blob:; object-src 'none';" />
   <title>Willow Clock</title>
-  <link rel="stylesheet" href="../node_modules/@fortawesome/fontawesome-free/css/all.min.css">
+  <link rel="stylesheet" href="../node_modules/@fortawesome/fontawesome-free/css/all.min.css" />
   <style>
     @font-face {
       font-family: "PawFont";
@@ -30,23 +30,29 @@
         -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
         Arial, sans-serif;
       margin: 0;
+      padding: 0;
+      background-color: #ff921e;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    /* Main content area below title bar */
+    .content-area {
+      flex: 1;
       padding: 15px;
-      /*
-      background: linear-gradient(135deg,
-          #ffffff 0%,
-          #ffd6ab 50%,
-          #8b8b8b 100%
-        );
-      */
-      background: #ff921e;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      width: 100vw;
-      overflow-x: hidden;
       overflow-y: auto;
+      min-height: 0;
+      /* Important for flex shrinking */
+      position: relative;
     }
 
     #mode {
@@ -55,6 +61,7 @@
       display: inline-block;
       margin-bottom: 20px;
       max-width: 600px;
+      min-height: 120px;
       width: 90vw;
       text-align: center;
     }
@@ -169,7 +176,6 @@
       font-weight: 300;
       color: rgba(255, 255, 255, 0.9);
       text-align: center;
-      margin-bottom: 0;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
       line-height: 1.2;
       transition: all 0.3s ease;
@@ -223,15 +229,18 @@
       background: transparent;
       border: none;
       outline: none;
-      margin-bottom: 0;
+      margin: 0;
+      padding: 0;
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
       width: fit-content;
       min-width: 8ch;
       max-width: 100%;
-      padding: 0;
       cursor: text;
       transition: all 0.3s ease;
       display: inline-block;
+      line-height: 1.1;
+      white-space: nowrap;
+      vertical-align: baseline;
     }
 
     #timer-input:read-only {
@@ -258,35 +267,37 @@
     /* Mode controls (buttons) */
     .mode-controls {
       display: flex;
-      gap: clamp(4px, 1.5vw, 8px);
+      gap: clamp(6px, 2vw, 10px);
       justify-content: center;
-      margin-top: clamp(0px, 1vw, 4px);
-      height: clamp(16px, 4vw, 24px);
+      margin-top: clamp(2px, 1.5vw, 6px);
+      height: clamp(24px, 5vw, 32px);
     }
 
     .mode-controls button {
       font-family: "PencilFont", Arial, sans-serif;
-      padding: clamp(1px, 0.5vw, 3px) clamp(6px, 2vw, 12px);
-      font-size: clamp(9px, 2.5vw, 14px);
+      padding: clamp(3px, 1vw, 6px) clamp(12px, 3vw, 18px);
+      font-size: clamp(12px, 3vw, 18px);
       background: rgba(255, 255, 255, 0.15);
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: clamp(2px, 0.5vw, 4px);
+      border-radius: clamp(3px, 0.8vw, 6px);
       cursor: pointer;
       transition: all 0.2s ease;
       user-select: none;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
       line-height: 1;
-      height: clamp(16px, 4vw, 24px);
+      height: clamp(24px, 5vw, 32px);
       display: flex;
       align-items: center;
-      min-width: clamp(32px, 8vw, 48px);
+      min-width: clamp(48px, 12vw, 72px);
     }
 
-    .mode-controls button:hover {
+    .mode-controls button:hover,
+    .mode-controls button:focus {
       background: rgba(255, 255, 255, 0.25);
       transform: translateY(-1px);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      outline: none;
     }
 
     .mode-controls button:active {
@@ -375,56 +386,11 @@
       line-height: 1.3;
     }
 
-    /* Responsive adjustments for different screen sizes */
-    @media (min-width: 400px) {
-      body {
-        padding: 20px;
-      }
-
-      #pixi-container {
-        width: min(80vw, 380px);
-        height: min(50vw, 280px);
-      }
-
-      .mode-controls {
-        gap: clamp(6px, 2vw, 10px);
-        margin-top: clamp(2px, 1.5vw, 6px);
-      }
-
-      .mode-controls button {
-        padding: clamp(2px, 0.8vw, 4px) clamp(8px, 2.5vw, 16px);
-        font-size: clamp(10px, 3vw, 16px);
-        min-width: clamp(40px, 10vw, 60px);
-      }
-    }
-
-    @media (min-height: 700px) {
-      #mode {
-        margin-bottom: 30px;
-      }
-
-      #clock {
-        margin-bottom: 15px;
-      }
-
-      #pixi-container {
-        margin-bottom: 30px;
-      }
-
-      .mode-controls {
-        height: clamp(20px, 5vw, 28px);
-      }
-
-      .mode-controls button {
-        height: clamp(20px, 5vw, 28px);
-        font-size: clamp(11px, 3.5vw, 18px);
-      }
-    }
-
-    /* Audio toggle button */
+    /* Audio toggle button - positioned below title bar */
     #audio-toggle {
       position: fixed;
-      top: clamp(12px, 3vw, 20px);
+      top: clamp(44px, calc(32px + 3vw), 52px);
+      /* Account for 32px title bar */
       right: clamp(12px, 3vw, 20px);
       background: rgba(255, 255, 255, 0.15);
       border: 1px solid rgba(255, 255, 255, 0.3);
@@ -441,16 +407,20 @@
       backdrop-filter: blur(10px);
       z-index: 1001;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      -webkit-app-region: no-drag;
+      /* Ensure it's clickable */
     }
 
-    #audio-toggle:hover {
+    #audio-toggle:hover,
+    #audio-toggle:focus {
       background: rgba(255, 255, 255, 0.25);
-      transform: translateY(-1px) scale(1.05);
+      transform: translateY(-1px);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      outline: none;
     }
 
     #audio-toggle:active {
-      transform: translateY(0) scale(0.98);
+      transform: translateY(0);
       box-shadow: none;
     }
 
@@ -462,7 +432,8 @@
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      z-index: 1000;
+      z-index: 9999;
+      /* High z-index to appear above title bar and all other elements */
       overflow: hidden;
     }
 
@@ -560,67 +531,177 @@
       transform: rotate(30deg);
     }
 
-    /* Keep paw prints white regardless of theme */
+    /* title bar */
+    #titlebar {
+      height: 32px;
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      background-color: rgb(44 42 47);
+      backdrop-filter: blur(10px);
+      -webkit-app-region: drag;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    #window-controls {
+      display: flex;
+      gap: 4px;
+      padding-right: 8px;
+      -webkit-app-region: no-drag;
+    }
+
+    #window-controls button {
+      -webkit-app-region: no-drag;
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    #window-controls button:hover,
+    #window-controls button:focus {
+      background-color: rgba(255, 255, 255, 0.15);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      outline: none;
+    }
+
+    #window-controls button:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    #close-btn:hover,
+    #close-btn:focus {
+      background-color: #e81123 !important;
+      color: white !important;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(232, 17, 35, 0.3);
+    }
+
+    #close-btn:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    /* Ensure interactive elements are non-draggable */
+    button,
+    input,
+    canvas,
+    #pixi-container,
+    #audio-toggle,
+    .mode-controls {
+      -webkit-app-region: no-drag;
+    }
   </style>
 </head>
 
 <body>
-  <div id="mode">
-    <!-- Clock Mode -->
-    <div id="clock-mode" class="active">
-      <div id="clock">00:00:00</div>
-      <div id="date">Loading...</div>
-    </div>
-
-    <!-- Stopwatch Mode -->
-    <div id="stopwatch">
-      <div id="stopwatch-time">00:00:00</div>
-      <div class="mode-controls">
-        <button id="stopwatch-start">Start</button>
-        <button id="stopwatch-reset">Reset</button>
-      </div>
-    </div>
-
-    <!-- Timer Mode -->
-    <div id="timer">
-      <input id="timer-input" type="text" value="00:05:00" maxlength="8" />
-      <div class="mode-controls">
-        <button id="timer-edit" title="Lock/Unlock timer for editing">
-          Lock
-        </button>
-        <button id="timer-start">Start</button>
-        <button id="timer-stop">Stop</button>
-      </div>
-    </div>
-
-    <!-- Focus Mode -->
-    <div id="focus">
-      <div id="focus-title">Focus!</div>
-      <div id="focus-time">00:00:00</div>
+  <!-- Loading screen -->
+  <div id="loading-screen" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #ff921e;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      ">
+    <div class="loading-text" style="
+          font-family: &quot;PawFont&quot;, Arial, sans-serif;
+          font-size: 48px;
+          color: white;
+          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+          margin-bottom: 20px;
+        ">
+      Willow Clock
     </div>
   </div>
-  <div id="pixi-container"></div>
 
-  <!-- Audio Controls -->
-  <button id="audio-toggle" title="Toggle background music">
-    <i class="fas fa-volume-up" id="volume-icon"></i>
-  </button>
-
-  <!-- Background Music -->
-  <audio id="background-music" loop preload="auto" crossorigin="anonymous">
-    <source src="../assets/audio/backtrack.wav" type="audio/wav">
-    Your browser does not support the audio element.
-  </audio>
-
-  <div id="info">
-    Electron: <span id="electron-version"></span> | Node:
-    <span id="node-version"></span> | Chrome:
-    <span id="chrome-version"></span> | State:
-    <span id="state-info">loading...</span>
+  <!-- Title bar -->
+  <div id="titlebar">
+    <div id="window-controls">
+      <button id="min-btn" title="Minimize">–</button>
+      <button id="close-btn" title="Close">×</button>
+    </div>
   </div>
+
+  <!-- Main content wrapper -->
+  <div class="content-area">
+    <div id="mode">
+      <!-- Clock Mode -->
+      <div id="clock-mode" class="active">
+        <div id="clock">00:00:00</div>
+        <div id="date">Loading...</div>
+      </div>
+
+      <!-- Stopwatch Mode -->
+      <div id="stopwatch">
+        <div id="stopwatch-time">00:00:00</div>
+        <div class="mode-controls">
+          <button id="stopwatch-start">Start</button>
+          <button id="stopwatch-reset">Reset</button>
+        </div>
+      </div>
+
+      <!-- Timer Mode -->
+      <div id="timer">
+        <input id="timer-input" type="text" value="00:05:00" maxlength="8" />
+        <div class="mode-controls">
+          <button id="timer-edit" title="Lock/Unlock timer for editing">
+            Lock
+          </button>
+          <button id="timer-start">Start</button>
+          <button id="timer-stop">Stop</button>
+        </div>
+      </div>
+
+      <!-- Focus Mode -->
+      <div id="focus">
+        <div id="focus-title">Focus!</div>
+        <div id="focus-time">00:00:00</div>
+      </div>
+    </div>
+    <div id="pixi-container"></div>
+
+    <!-- Audio Controls -->
+    <button id="audio-toggle" title="Toggle background music">
+      <i class="fas fa-volume-up" id="volume-icon"></i>
+    </button>
+
+    <!-- Background Music -->
+    <audio id="background-music" loop preload="auto" crossorigin="anonymous">
+      <source src="../assets/audio/backtrack.wav" type="audio/wav" />
+      Your browser does not support the audio element.
+    </audio>
+
+    <div id="info">
+      Electron: <span id="electron-version"></span> | Node:
+      <span id="node-version"></span> | Chrome:
+      <span id="chrome-version"></span> | State:
+      <span id="state-info">loading...</span>
+    </div>
+  </div>
+  <!-- Close content-area -->
 
   <script type="module" src="../src/app.js"></script>
   <script type="module" src="../src/renderer.js"></script>
+
+  <!-- Window controls script -->
+  <script type="module" src="../src/window-controls.js"></script>
 </body>
 
 </html>
