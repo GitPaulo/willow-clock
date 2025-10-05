@@ -7,14 +7,13 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --reload",
-    "start:headless": "xvfb-run -a electron . --enable-unsafe-swiftshader --disable-gpu-sandbox --no-sandbox",
     "prebuild": "cp node_modules/pixi.js/dist/pixi.mjs public/pixi.js",
     "build:linux": "electron-builder --linux",
     "build:windows": "electron-builder --win",
+    "linux": "./deploy/linux.sh",
+    "windows": "./deploy/windows.sh",
     "clean": "rm -rf dist/",
-    "deploy": "./deploy.sh",
-    "lint": "eslint .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint ."
   },
   "keywords": [
     "electron",

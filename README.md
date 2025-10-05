@@ -1,22 +1,13 @@
 # Willow Clock
 
-A beautiful clock app built with Electron and PixiJS animations.
+Clock app with Electron and PixiJS.
 
-## Quick Start
-
-**Development:**
 ```bash
-npm install && npm start
+npm start           # Run
+npm run linux       # Build Linux
+npm run windows     # Build Windows (WSL)
+npm run clean       # Clean
 ```
-
-**Deploy:**
-```bash
-./deploy.sh linux     # Linux binaries
-./deploy.sh windows   # Windows setup (WSL)
-./deploy.sh clean     # Clean builds
-```
-
-**Outputs:** AppImage, .deb, .tar.gz (Linux) | .exe installer, portable (Windows)
 
 ---
 

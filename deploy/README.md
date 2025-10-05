@@ -3,18 +3,23 @@
 ## Quick Commands
 
 ```bash
-./deploy.sh linux     # Build Linux binaries
-./deploy.sh windows   # Set up Windows build (WSL)
-./deploy.sh clean     # Remove dist folder
+./deploy.sh linux         # Build Linux binaries  
+./deploy.sh windows-cross # Cross-compile Windows .exe (WSL)
+./deploy.sh windows       # Copy to Windows for native build
+./deploy.sh clean         # Remove dist folder
 ```
 
 ## Outputs
 
 **Linux:** AppImage (portable), .deb (Ubuntu/Debian), .tar.gz  
-**Windows:** .exe installer, portable executable (via WSL helper)
+**Windows:** Standalone .exe with all dependencies
 
-## WSL Windows Building
+## WSL Windows Building (NEW!)
 
-The `windows` command copies your project to `C:\Users\[You]\Desktop\willow-clock-deploy` and creates a `BUILD.bat` file. Run that on Windows to build native binaries.
+### Cross-compile (Recommended)
+`./deploy.sh windows-cross` - Builds Windows .exe directly in WSL and copies to Windows desktop. **No Wine required!**
 
-Wine doesn't work in WSL, so this is the simplest solution.
+### Native Windows build  
+`./deploy.sh windows` - Copies project to Windows and creates BUILD.bat for native building.
+
+The cross-compile option works by ignoring Wine metadata errors - the .exe builds successfully without version info.

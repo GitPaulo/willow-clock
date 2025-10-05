@@ -1,30 +1,16 @@
 #!/bin/bash
-# Windows build helper for WSL
-
 set -e
-
-# Check WSL
-if ! grep -q microsoft /proc/version 2>/dev/null; then
-    echo "❌ WSL only"
+cd "$(dirname "$0")/.."
+rm -rf dist/win-unpacked 2>/dev/null || true
+npm run prebuild
+npx electron-builder --win --dir 2>/dev/null || true
+if [ -f "dist/win-unpacked/Willow Clock.exe" ]; then
+    echo "✅ Windows exe built ($(du -h "dist/win-unpacked/Willow Clock.exe" | cut -f1))"
+    WIN_USER=$(powershell.exe '$env:USERNAME' 2>/dev/null | tr -d '\r\n' || echo "")
+    if [ -n "$WIN_USER" ] && [ -d "/mnt/c/Users" ]; then
+        cp -r "dist/win-unpacked" "/mnt/c/Users/$WIN_USER/Desktop/WillowClock" 2>/dev/null && echo "📁 Copied to Windows desktop"
+    fi
+else
+    echo "❌ Build failed"
     exit 1
 fi
-
-WIN_USER=$(powershell.exe '$env:USERNAME' 2>/dev/null | tr -d '\r\n')
-TARGET="/mnt/c/Users/$WIN_USER/Desktop/willow-clock-deploy"
-
-echo "📁 Copying to Windows: C:\\Users\\$WIN_USER\\Desktop\\willow-clock-deploy"
-
-rm -rf "$TARGET"
-mkdir -p "$TARGET"
-rsync -av --exclude='node_modules' --exclude='dist' --exclude='.git' --exclude='deploy' "$(dirname "$0")/../" "$TARGET/"
-
-# Create Windows build script
-cat > "$TARGET/BUILD.bat" << 'EOF'
-@echo off
-echo Building Willow Clock for Windows...
-npm install && npm run build:windows
-echo Done! Check dist folder.
-pause
-EOF
-
-echo "✅ Ready! Open Windows Explorer and run BUILD.bat"
