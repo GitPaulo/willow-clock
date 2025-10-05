@@ -1,5 +1,27 @@
 # Willow Clock
 
+A beautiful clock app built with Electron and PixiJS animations.
+
+## Quick Start
+
+**Development:**
+```bash
+npm install && npm start
+```
+
+**Deploy:**
+```bash
+./deploy.sh linux     # Linux binaries
+./deploy.sh windows   # Windows setup (WSL)
+./deploy.sh clean     # Clean builds
+```
+
+**Outputs:** AppImage, .deb, .tar.gz (Linux) | .exe installer, portable (Windows)
+
+---
+
+# Original README
+
 :3
 
 ## Prerequisites
@@ -62,39 +84,3 @@ electron-builder --win
 electron-builder --mac
 ```
 
-### Testing Built Applications
-
-**Linux (after `npm run pack`):**
-
-```bash
-./dist/linux-unpacked/willow-clock
-```
-
-**Windows (after building .exe):**
-
-- Run the installer from `dist/` directory
-- Or execute the portable version directly
-
-**Automated Testing:**
-
-```bash
-# Build and test in one command
-npm run pack && ./dist/linux-unpacked/willow-clock
-```
-
-## Project Structure
-
-```
-├── main.js           # Electron main process
-├── src/
-│   ├── preload.js    # Secure preload script
-│   └── renderer.js   # Clock logic and PixiJS animation
-├── public/
-│   ├── index.html    # Application UI
-│   └── pixi.js       # Local PixiJS module
-└── package.json      # Project configuration
-```
-
-## License
-
-Apache-2.0

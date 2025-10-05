@@ -8,11 +8,20 @@
     "start": "electron .",
     "dev": "electron . --reload",
     "start:headless": "xvfb-run -a electron . --enable-unsafe-swiftshader --disable-gpu-sandbox --no-sandbox",
+    "start:codespace": "npm run start:headless",
     "prebuild": "cp node_modules/pixi.js/dist/pixi.mjs public/pixi.js",
+    "build": "electron-builder",
     "build:linux": "electron-builder --linux",
     "build:windows": "electron-builder --win",
-    "clean": "rm -rf dist/",
-    "deploy": "./deploy.sh",
+    "build:mac": "electron-builder --mac",
+    "build:all": "electron-builder --linux --win",
+    "build:full": "electron-builder --mac --win --linux",
+    "build:native": "node-gyp rebuild",
+    "install:native": "npm install node-addon-api node-gyp",
+    "pack": "electron-builder --dir",
+    "pack:linux": "electron-builder --linux --dir",
+    "pack:windows": "electron-builder --win --dir",
+    "clean": "rm -rf dist/ build/",
     "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -21,10 +30,7 @@
     "pixi.js",
     "clock"
   ],
-  "author": {
-    "name": "Paulo",
-    "email": "projects.paulo.santos98@gmail.com"
-  },
+    \"author\": {\n    \"name\": \"Willow Clock Team\",\n    \"email\": \"team@willowclock.com\"\n  },
   "license": "Apache-2.0",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
@@ -56,9 +62,7 @@
       {
         "from": "assets/",
         "to": "assets/",
-        "filter": [
-          "**/*"
-        ]
+        "filter": ["**/*"]
       }
     ],
     "mac": {
@@ -66,10 +70,7 @@
       "target": [
         {
           "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
+          "arch": ["x64", "arm64"]
         }
       ]
     },
@@ -77,16 +78,11 @@
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64",
-            "ia32"
-          ]
+          "arch": ["x64", "ia32"]
         },
         {
           "target": "portable",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         }
       ],
       "publisherName": "Willow Clock",
@@ -96,21 +92,15 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         },
         {
           "target": "tar.gz",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         },
         {
           "target": "deb",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         }
       ],
       "category": "Utility"

@@ -311,6 +311,10 @@ function setupTimer() {
   startButton.disabled = false;
   stopButton.disabled = false;
 
+  // Set initial button state
+  lockToggleButton.textContent = "Unlock";
+  lockToggleButton.title = "Click to unlock timer for editing";
+
   const updateTimerDisplay = () => {
     timerInputElement.value = formatTime(timerRemainingTime);
   };
