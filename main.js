@@ -29,6 +29,9 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      // Audio optimizations
+      experimentalFeatures: true,
+      enableBlinkFeatures: "AudioWorklet",
     },
   };
 
@@ -82,6 +85,12 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Audio optimizations for better playback
+  app.commandLine.appendSwitch('--disable-background-timer-throttling');
+  app.commandLine.appendSwitch('--disable-backgrounding-occluded-windows');
+  app.commandLine.appendSwitch('--disable-renderer-backgrounding');
+  app.commandLine.appendSwitch('--autoplay-policy', 'no-user-gesture-required');
+
   createWindow();
 
   app.on("activate", () => {

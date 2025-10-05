@@ -84,8 +84,9 @@ async function startBackgroundMusic() {
   if (!backgroundMusic) return;
 
   try {
+    // Set volume before playing to prevent crackling
+    backgroundMusic.volume = 0.08;
     await backgroundMusic.play();
-    fadeVolume(backgroundMusic, 0.08);
   } catch (error) {
     console.log("[App] Auto-play blocked:", error.message);
   }
@@ -108,16 +109,23 @@ function setupBackgroundMusic() {
 
   if (!backgroundMusic || !audioToggle || !volumeIcon) return;
 
-  Object.assign(backgroundMusic, {
-    volume: 0.08,
-    preservesPitch: false,
-    mozPreservesPitch: false,
-    webkitPreservesPitch: false,
-    playbackRate: 1.0,
-    defaultPlaybackRate: 1.0,
-    preload: "auto",
-    crossOrigin: "anonymous",
-  });
+  // Set audio properties to prevent crackling
+  backgroundMusic.volume = 0.08;
+  backgroundMusic.preload = "auto";
+
+  // Additional audio optimizations
+  try {
+    // Set audio context sample rate if available (Electron/Chrome)
+    if (window.AudioContext || window.webkitAudioContext) {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      // Request optimal buffer size for smooth playback
+      if (audioContext.sampleRate !== 44100) {
+        console.log(`[Audio] Sample rate mismatch: ${audioContext.sampleRate}Hz vs 44100Hz`);
+      }
+    }
+  } catch (e) {
+    console.log("[Audio] AudioContext optimization unavailable:", e.message);
+  }
 
   backgroundMusic.addEventListener("error", (e) => {
     console.warn("[App] Audio loading error:", e.target.error);

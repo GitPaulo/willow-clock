@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --reload",
-    "prebuild": "cp node_modules/pixi.js/dist/pixi.mjs public/pixi.js",
+    "prebuild": "cp node_modules/pixi.js/dist/pixi.mjs public/pixi.js && cp -r assets public/",
     "build:linux": "electron-builder --linux",
     "build:windows": "electron-builder --win",
     "linux": "./deploy/linux.sh",
@@ -48,17 +48,7 @@
       "main.js",
       "public/**/*",
       "src/**/*",
-      "assets/**/*",
       "node_modules/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "assets/",
-        "to": "assets/",
-        "filter": [
-          "**/*"
-        ]
-      }
     ],
     "mac": {
       "category": "public.app-category.utilities",
@@ -89,7 +79,8 @@
         }
       ],
       "publisherName": "Willow Clock",
-      "verifyUpdateCodeSignature": false
+      "verifyUpdateCodeSignature": false,
+      "sign": false
     },
     "linux": {
       "target": [

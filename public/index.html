@@ -11,13 +11,13 @@
   <style>
     @font-face {
       font-family: "PawFont";
-      src: url("../assets/fonts/font_paw.otf") format("opentype");
+      src: url("./assets/fonts/font_paw.otf") format("opentype");
       font-display: swap;
     }
 
     @font-face {
       font-family: "PencilFont";
-      src: url("../assets/fonts/font_pencil.otf") format("opentype");
+      src: url("./assets/fonts/font_pencil.otf") format("opentype");
       font-display: swap;
     }
 
@@ -634,8 +634,8 @@
   <!-- Title bar -->
   <div id="titlebar">
     <div id="window-controls">
-      <button id="min-btn" title="Minimize">–</button>
-      <button id="close-btn" title="Close">×</button>
+      <button id="min-btn" title="Minimize"><i class="fas fa-minus"></i></button>
+      <button id="close-btn" title="Close"><i class="fas fa-times"></i></button>
     </div>
   </div>
 
@@ -683,8 +683,8 @@
     </button>
 
     <!-- Background Music -->
-    <audio id="background-music" loop preload="auto" crossorigin="anonymous">
-      <source src="../assets/audio/backtrack.wav" type="audio/wav" />
+    <audio id="background-music" loop preload="auto">
+      <source src="./assets/audio/backtrack.wav" type="audio/wav" />
       Your browser does not support the audio element.
     </audio>
 

@@ -21,7 +21,7 @@ import { onStateChange, getCurrentState } from "./state-machine.js";
 // scale: sprite size multiplier (0.5 = half, 1.0 = original, 2.0 = double)
 const SPRITE_CONFIG = {
   day: {
-    path: "../assets/animations/sprite_day.png",
+    path: "./assets/animations/sprite_day.png",
     frames: 10,
     frameWidth: 128,
     frameHeight: 128,
@@ -30,7 +30,7 @@ const SPRITE_CONFIG = {
     scale: 2.5,
   },
   night: {
-    path: "../assets/animations/sprite_night.png",
+    path: "./assets/animations/sprite_night.png",
     frames: 3,
     frameWidth: 128,
     frameHeight: 128,
@@ -39,7 +39,7 @@ const SPRITE_CONFIG = {
     scale: 2.5,
   },
   music: {
-    path: "../assets/animations/sprite_music.png",
+    path: "./assets/animations/sprite_music.png",
     frames: 10,
     frameWidth: 128,
     frameHeight: 128,
@@ -48,7 +48,7 @@ const SPRITE_CONFIG = {
     scale: 2.5,
   },
   pet: {
-    path: "../assets/animations/sprite_pet.png",
+    path: "./assets/animations/sprite_pet.png",
     frames: 6,
     frameWidth: 128,
     frameHeight: 128,
