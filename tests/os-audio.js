@@ -19,14 +19,14 @@ async function getMediaStateWindows() {
     }, 10000); // 10 second timeout
 
     // Check if we're dealing with UNC path (WSL from Windows)
-    const isUNCPath = WINDOWS_MEDIA_STATE.includes('\\\\wsl.localhost');
+    const isUNCPath = WINDOWS_MEDIA_STATE.includes("\\\\wsl.localhost");
 
     if (isUNCPath) {
       // Use PowerShell to run the executable from UNC path
       const psCommand = `& '${WINDOWS_MEDIA_STATE}'`;
       console.debug("[win] Using PowerShell for UNC path");
 
-      execFile('powershell', ['-Command', psCommand], (err, stdout, stderr) => {
+      execFile("powershell", ["-Command", psCommand], (err, stdout, stderr) => {
         clearTimeout(timeout);
 
         if (err) {
@@ -113,7 +113,7 @@ async function main() {
     try {
       const state = await getMediaState();
       console.log(
-        `Media playing: ${state.playing} | Sources: [${state.sources.join(", ")}]`
+        `Media playing: ${state.playing} | Sources: [${state.sources.join(", ")}]`,
       );
     } catch (err) {
       console.error("[main] error:", err.message);

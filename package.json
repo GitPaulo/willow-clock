@@ -31,6 +31,7 @@
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@nodert-win10-20h1/windows.media.control": "^0.1.0",
     "dbus-next": "^0.10.2",
+    "js-yaml": "^4.1.0",
     "pixi.js": "^8.8.1"
   },
   "devDependencies": {

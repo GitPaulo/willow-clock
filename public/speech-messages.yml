@@ -1,0 +1,20 @@
+greeting:
+  - "Hello there! Nice to see you!"
+  - "Good to have you here!"
+  - "Welcome back, friend!"
+
+pet:
+  - "That tickles!"
+  - "Hehe, that feels nice!"
+  - "More pets please!"
+  - "I love attention!"
+
+music:
+  - "I can hear the music too!"
+  - "This beat is catchy!"
+  - "Music makes everything better!"
+
+time:
+  - "Time keeps flowing..."
+  - "Another moment passes by."
+  - "Tick tock, tick tock..."

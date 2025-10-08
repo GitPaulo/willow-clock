@@ -6,8 +6,17 @@ import {
   toggleHoverStates,
   formatTime,
 } from "./utils.js";
-import { setMusicActive, triggerPet, initializeState, updateBaseStateFromTime } from "./state-machine.js";
-import { playTextBeep, initTextSound, getAudioState } from "./audio/text-audio.js";
+import {
+  setMusicActive,
+  triggerPet,
+  initializeState,
+  updateBaseStateFromTime,
+} from "./state-machine.js";
+import {
+  playTextBeep,
+  initTextSound,
+  getAudioState,
+} from "./audio/text-audio.js";
 
 let activeModeIndex = 0;
 let stopwatchIntervalId = null;
@@ -120,10 +129,13 @@ function setupBackgroundMusic() {
   try {
     // Set audio context sample rate if available (Electron/Chrome)
     if (window.AudioContext || window.webkitAudioContext) {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const audioContext = new (window.AudioContext ||
+        window.webkitAudioContext)();
       // Request optimal buffer size for smooth playback
       if (audioContext.sampleRate !== 44100) {
-        console.log(`[Audio] Sample rate mismatch: ${audioContext.sampleRate}Hz vs 44100Hz`);
+        console.log(
+          `[Audio] Sample rate mismatch: ${audioContext.sampleRate}Hz vs 44100Hz`,
+        );
       }
     }
   } catch (e) {
@@ -415,13 +427,16 @@ function setupAudioDetection() {
   console.log("[App] Setting up audio detection...");
 
   // Check if audioAPI is available (in Electron environment)
-  if (typeof window.audioAPI !== 'undefined') {
+  if (typeof window.audioAPI !== "undefined") {
     // Start audio detection in main process
-    window.audioAPI.startAudio().then(() => {
-      console.log("[App] Audio detection started");
-    }).catch(error => {
-      console.warn("[App] Failed to start audio detection:", error);
-    });
+    window.audioAPI
+      .startAudio()
+      .then(() => {
+        console.log("[App] Audio detection started");
+      })
+      .catch((error) => {
+        console.warn("[App] Failed to start audio detection:", error);
+      });
 
     // Listen for music status changes from main process
     window.audioAPI.onMusicStatusChanged((isPlaying) => {
@@ -443,13 +458,18 @@ function setupTestFunctions() {
 
   window.testSpeech = (text) => {
     if (window.speechBox && window.startTypewriter) {
-      window.startTypewriter(window.speechBox, text || "Hello! This is a test message with typewriter animation.");
+      window.startTypewriter(
+        window.speechBox,
+        text || "Hello! This is a test message with typewriter animation.",
+      );
     }
   };
 
   window.testSpeechCategory = (category) => {
     if (window.speechBox && window.startTypewriter && window.getRandomSpeech) {
-      const message = window.getRandomSpeech(category) || `No messages for category: ${category}`;
+      const message =
+        window.getRandomSpeech(category) ||
+        `No messages for category: ${category}`;
       window.startTypewriter(window.speechBox, message);
     }
   };

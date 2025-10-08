@@ -21,6 +21,10 @@ export default [
         require: "readonly",
         module: "readonly",
         exports: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
       },
     },
     rules: {
@@ -57,6 +61,7 @@ export default [
       "src/utils.js",
       "src/state-machine.js",
       "src/audio/system-audio.js",
+      "src/audio/text-audio.js",
       "src/effects/**/*.js",
       "src/window-controls.js",
     ],
@@ -89,6 +94,28 @@ export default [
     rules: {
       "no-console": "off", // Allow console in development
       "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+    },
+  },
+  {
+    // Test files (Node.js environment)
+    files: ["tests/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        process: "readonly",
+        console: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        Buffer: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly",
+      },
+    },
+    rules: {
+      "no-console": "off",
     },
   },
 ];

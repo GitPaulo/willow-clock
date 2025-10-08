@@ -8,12 +8,9 @@ import {
   Graphics,
   Container,
 } from "../public/pixi.js";
-import {
-  initializeApp,
-  handleClick,
-} from "./app.js";
+import { initializeApp, handleClick } from "./app.js";
 import { onStateChange, getCurrentState } from "./state-machine.js";
-import { initTextSound, playTextBeep, playTextBeepSoft, isTextAudioReady } from "./audio/text-audio.js";
+import { initTextSound, playTextBeepSoft } from "./audio/text-audio.js";
 
 // Sprite sheet configuration - add new sprites here
 // Each sprite sheet should be a horizontal strip of frames (128px height)
@@ -81,36 +78,64 @@ const SPEECH_CONFIG = {
   typewriterSpeed: 50, // milliseconds per character
   soundEnabled: true, // Enable typewriter sound effects
   get height() {
-    return this.textStyle.lineHeight + (this.padding * 2); // Height based on line height + padding
+    return this.textStyle.lineHeight + this.padding * 2; // Height based on line height + padding
   },
 };
 
-// Sample speech messages for different states/events
-const SPEECH_MESSAGES = {
-  greeting: [
-    "Hello there! Nice to see you!",
-    "Good to have you here!",
-    "Welcome back, friend!",
-  ],
-  pet: [
-    "That tickles!",
-    "Hehe, that feels nice!",
-    "More pets please!",
-    "I love attention!",
-  ],
-  music: [
-    "I can hear the music too!",
-    "This beat is catchy!",
-    "Music makes everything better!",
-  ],
-  time: [
-    "Time keeps flowing...",
-    "Another moment passes by.",
-    "Tick tock, tick tock...",
-  ],
-};
+// Speech messages loaded from YAML
+let SPEECH_MESSAGES = {};
+
+// Load speech messages from YAML file
+async function loadSpeechMessages() {
+  try {
+    const response = await fetch("./speech-messages.yml");
+    const yamlText = await response.text();
+
+    // Parse YAML - simple manual parsing for basic structure
+    SPEECH_MESSAGES = parseSimpleYAML(yamlText);
+    console.log("[Renderer] Speech messages loaded from YAML");
+  } catch (error) {
+    console.error("[Renderer] Failed to load speech messages:", error);
+    // Fallback messages
+    SPEECH_MESSAGES = {
+      greeting: ["Hello there!"],
+      pet: ["That tickles!"],
+      music: ["I can hear the music too!"],
+      time: ["Time keeps flowing..."],
+    };
+  }
+}
+
+// Simple YAML parser for our basic structure
+function parseSimpleYAML(yamlText) {
+  const messages = {};
+  const lines = yamlText.split("\n");
+  let currentCategory = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    if (trimmed.endsWith(":") && !trimmed.startsWith("-")) {
+      // Category line
+      currentCategory = trimmed.slice(0, -1);
+      messages[currentCategory] = [];
+    } else if (trimmed.startsWith('- "') && trimmed.endsWith('"')) {
+      // Message line
+      if (currentCategory) {
+        const message = trimmed.slice(3, -1); // Remove '- "' and '"'
+        messages[currentCategory].push(message);
+      }
+    }
+  }
+
+  return messages;
+}
 
 initializeApp();
+
+// Load speech messages when renderer starts
+loadSpeechMessages();
 
 async function loadSpriteAssets() {
   console.log("[Renderer] Loading sprite sheets...");
@@ -193,7 +218,7 @@ function createSpeechBox(x, y) {
     .stroke({
       color: SPEECH_CONFIG.borderColor,
       alpha: SPEECH_CONFIG.borderAlpha,
-      width: SPEECH_CONFIG.borderWidth
+      width: SPEECH_CONFIG.borderWidth,
     });
 
   // Create text object
@@ -227,7 +252,7 @@ function createSpeechBox(x, y) {
 
 function getRandomSpeech(category) {
   const messages = SPEECH_MESSAGES[category];
-  if (!messages || messages.length === 0) return "";
+  if (!messages || messages.length === 0) return `No messages for ${category}`;
   return messages[Math.floor(Math.random() * messages.length)];
 }
 
@@ -274,8 +299,6 @@ function startTypewriter(speechBox, text) {
   }, SPEECH_CONFIG.typewriterSpeed);
 }
 
-
-
 function updateStateInfo(state) {
   const element = document.getElementById("state-info");
   if (element) element.innerText = state;
@@ -285,8 +308,14 @@ async function initPixi() {
   console.log("[Renderer] Initializing PIXI.js...");
   try {
     const container = document.getElementById("pixi-container");
-    const width = Math.max(Math.floor(container.getBoundingClientRect().width) || 340, 340);
-    const height = Math.max(Math.floor(container.getBoundingClientRect().height) || 220, 220);
+    const width = Math.max(
+      Math.floor(container.getBoundingClientRect().width) || 340,
+      340,
+    );
+    const height = Math.max(
+      Math.floor(container.getBoundingClientRect().height) || 220,
+      220,
+    );
 
     const app = new Application();
     await app.init({
@@ -313,9 +342,10 @@ async function initPixi() {
     const sprites = createSprites(app, centerX, centerY);
     switchToSprite(sprites, getCurrentState());
 
-
-
-    const speechBox = createSpeechBox(centerX, height - SPEECH_CONFIG.height - SPEECH_CONFIG.bottomMargin);
+    const speechBox = createSpeechBox(
+      centerX,
+      height - SPEECH_CONFIG.height - SPEECH_CONFIG.bottomMargin,
+    );
     app.stage.addChild(speechBox);
 
     // Expose globally for testing and external use
@@ -328,7 +358,8 @@ async function initPixi() {
       centerY = app.screen.height / 2;
       repositionSprites(sprites, centerX, centerY);
       speechBox.x = centerX - SPEECH_CONFIG.width / 2;
-      speechBox.y = app.screen.height - SPEECH_CONFIG.height - SPEECH_CONFIG.bottomMargin;
+      speechBox.y =
+        app.screen.height - SPEECH_CONFIG.height - SPEECH_CONFIG.bottomMargin;
     });
 
     onStateChange((newState) => {
@@ -337,10 +368,10 @@ async function initPixi() {
       updateStateInfo(newState);
 
       // Trigger speech for certain state changes
-      if (newState === 'pet') {
-        startTypewriter(speechBox, getRandomSpeech('pet'));
-      } else if (newState === 'music') {
-        startTypewriter(speechBox, getRandomSpeech('music'));
+      if (newState === "pet") {
+        startTypewriter(speechBox, getRandomSpeech("pet"));
+      } else if (newState === "music") {
+        startTypewriter(speechBox, getRandomSpeech("music"));
       }
     });
 

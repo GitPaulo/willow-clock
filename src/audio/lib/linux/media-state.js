@@ -20,7 +20,9 @@ async function getMediaState() {
   try {
     const reply = await bus.call(msg);
     const names = reply.body[0];
-    const players = names.filter((n) => n.startsWith("org.mpris.MediaPlayer2."));
+    const players = names.filter((n) =>
+      n.startsWith("org.mpris.MediaPlayer2."),
+    );
 
     for (const name of players) {
       const appName = name.replace("org.mpris.MediaPlayer2.", "");
@@ -41,7 +43,7 @@ async function getMediaState() {
           result.playing = true;
           result.sources.push(appName);
         }
-      } catch (err) {
+      } catch {
         // ignore unresponsive players
       }
     }

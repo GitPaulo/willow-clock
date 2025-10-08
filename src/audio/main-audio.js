@@ -1,4 +1,4 @@
-import { isMusicPlaying } from './media-api.js';
+import { isMusicPlaying } from "./media-api.js";
 
 let musicCheckInterval = null;
 let mainWindow = null;
@@ -27,7 +27,7 @@ export function initSystemAudio(window) {
       const isPlaying = await isMusicPlaying();
 
       // Send the music status to the renderer process
-      mainWindow.webContents.send('music-status-changed', isPlaying);
+      mainWindow.webContents.send("music-status-changed", isPlaying);
     } catch (error) {
       console.warn("[MainAudio] Music detection error:", error.message);
     }
@@ -39,7 +39,7 @@ export function initSystemAudio(window) {
 
     try {
       const isPlaying = await isMusicPlaying();
-      mainWindow.webContents.send('music-status-changed', isPlaying);
+      mainWindow.webContents.send("music-status-changed", isPlaying);
       console.log("[MainAudio] Music detection initialized");
     } catch (error) {
       console.warn("[MainAudio] Initial music check failed:", error.message);

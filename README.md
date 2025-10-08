@@ -74,4 +74,3 @@ electron-builder --win
 # macOS app (requires macOS)
 electron-builder --mac
 ```
-

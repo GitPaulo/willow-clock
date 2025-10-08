@@ -81,7 +81,7 @@ export function playTextBeepSoft() {
  * Check if text audio is ready to use
  */
 export function isTextAudioReady() {
-  return isInitialized && audioCtx && audioCtx.state === 'running';
+  return isInitialized && audioCtx && audioCtx.state === "running";
 }
 
 /**
@@ -90,7 +90,7 @@ export function isTextAudioReady() {
 export function getAudioState() {
   return {
     initialized: isInitialized,
-    contextState: audioCtx ? audioCtx.state : 'null',
-    ready: isTextAudioReady()
+    contextState: audioCtx ? audioCtx.state : "null",
+    ready: isTextAudioReady(),
   };
 }
