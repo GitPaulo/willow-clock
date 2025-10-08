@@ -11,6 +11,11 @@ contextBridge.exposeInMainWorld("audioAPI", {
       callback(audioActive);
     });
   },
+  onMusicStatusChanged: (callback) => {
+    ipcRenderer.on("music-status-changed", (event, isPlaying) => {
+      callback(isPlaying);
+    });
+  },
 });
 
 contextBridge.exposeInMainWorld("windowControls", {

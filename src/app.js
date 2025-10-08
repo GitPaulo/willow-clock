@@ -4,9 +4,10 @@ import {
   MODES,
   getElements,
   toggleHoverStates,
-  fadeVolume,
   formatTime,
 } from "./utils.js";
+import { setMusicActive, triggerPet, initializeState, updateBaseStateFromTime } from "./state-machine.js";
+import { playTextBeep, initTextSound, getAudioState } from "./audio/text-audio.js";
 
 let activeModeIndex = 0;
 let stopwatchIntervalId = null;
@@ -27,6 +28,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setupFocus();
   setupCursorTrail();
   setupBackgroundMusic();
+  setupAudioDetection();
+  setupTestFunctions();
 });
 
 function setupLoadingScreen() {
@@ -406,4 +409,88 @@ function updateFocusDisplay() {
   if (focusTimeDisplayElement) {
     focusTimeDisplayElement.textContent = formatTime(focusElapsedTime);
   }
+}
+
+function setupAudioDetection() {
+  console.log("[App] Setting up audio detection...");
+
+  // Check if audioAPI is available (in Electron environment)
+  if (typeof window.audioAPI !== 'undefined') {
+    // Start audio detection in main process
+    window.audioAPI.startAudio().then(() => {
+      console.log("[App] Audio detection started");
+    }).catch(error => {
+      console.warn("[App] Failed to start audio detection:", error);
+    });
+
+    // Listen for music status changes from main process
+    window.audioAPI.onMusicStatusChanged((isPlaying) => {
+      console.log("[App] Music status changed:", isPlaying);
+      setMusicActive(isPlaying);
+    });
+  } else {
+    console.warn("[App] audioAPI not available - running in browser mode");
+  }
+}
+
+function setupTestFunctions() {
+  window.testPet = () => triggerPet();
+
+  window.testMusic = () => {
+    console.log(`[App] Testing music - forcing music state to true`);
+    setMusicActive(true);
+  };
+
+  window.testSpeech = (text) => {
+    if (window.speechBox && window.startTypewriter) {
+      window.startTypewriter(window.speechBox, text || "Hello! This is a test message with typewriter animation.");
+    }
+  };
+
+  window.testSpeechCategory = (category) => {
+    if (window.speechBox && window.startTypewriter && window.getRandomSpeech) {
+      const message = window.getRandomSpeech(category) || `No messages for category: ${category}`;
+      window.startTypewriter(window.speechBox, message);
+    }
+  };
+
+  window.testTextBeep = () => {
+    initTextSound(); // Ensure audio is initialized
+    playTextBeep();
+  };
+
+  window.testAudioStatus = () => {
+    console.log("[App] TextAudio Status:", getAudioState());
+    return getAudioState();
+  };
+
+  console.log(
+    "[App] Test functions available: testPet(), testMusic(), testSpeech('message'), testTextBeep(), testAudioStatus()",
+  );
+}
+
+// App-specific functions moved from utils.js
+function updateClock() {
+  const now = new Date();
+  const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+  document.getElementById("clock").textContent = time;
+
+  const date = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  document.getElementById("date").textContent = date;
+}
+
+export function handleClick() {
+  triggerPet();
+}
+
+export function initializeApp() {
+  initializeState();
+  updateClock();
+  setInterval(updateClock, 1000);
+  setInterval(updateBaseStateFromTime, 60000);
 }

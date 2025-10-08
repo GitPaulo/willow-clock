@@ -10,10 +10,8 @@ import {
 } from "../public/pixi.js";
 import {
   initializeApp,
-  setupAudioDetection,
   handleClick,
-  setupTestFunctions,
-} from "./utils.js";
+} from "./app.js";
 import { onStateChange, getCurrentState } from "./state-machine.js";
 import { initTextSound, playTextBeep, playTextBeepSoft, isTextAudioReady } from "./audio/text-audio.js";
 
@@ -113,8 +111,6 @@ const SPEECH_MESSAGES = {
 };
 
 initializeApp();
-setupAudioDetection();
-setupTestFunctions();
 
 async function loadSpriteAssets() {
   console.log("[Renderer] Loading sprite sheets...");

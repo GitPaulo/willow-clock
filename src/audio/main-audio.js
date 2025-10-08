@@ -1,138 +1,78 @@
-import { spawn } from "child_process";
-import { platform } from "os";
+import { isMusicPlaying } from './media-api.js';
 
-let audioProcess = null;
-let isAudioActive = false;
+let musicCheckInterval = null;
 let mainWindow = null;
-function initSystemAudio(window) {
+let isActive = false;
+
+/**
+ * Initialize system audio detection
+ * @param {Electron.BrowserWindow} window - Main window instance
+ */
+export function initSystemAudio(window) {
   mainWindow = window;
+  isActive = true;
 
-  const os = platform();
-  console.log(
-    "[MainAudio] Initializing system audio detection for platform:",
-    os,
-  );
+  console.log("[MainAudio] Starting music detection...");
 
-  try {
-    if (os === "win32") {
-      return startWindowsAudioDetection();
-    } else if (os === "linux") {
-      return startLinuxAudioDetection();
-    } else {
-      console.log("[MainAudio] System audio not supported on platform:", os);
-      return false;
-    }
-  } catch (error) {
-    console.log("[MainAudio] System audio detection failed:", error.message);
-    return false;
+  // Clear any existing interval
+  if (musicCheckInterval) {
+    clearInterval(musicCheckInterval);
   }
-}
 
-// Windows WASAPI detection
-function startWindowsAudioDetection() {
-  console.log("[MainAudio] Starting Windows audio detection...");
+  // Start polling for music state every 3 seconds
+  musicCheckInterval = setInterval(async () => {
+    if (!isActive || !mainWindow) return;
 
-  // Use PowerShell to monitor system audio
-  const script = `
-    Add-Type -TypeDefinition @"
-      using System;
-      using System.Runtime.InteropServices;
-      public class AudioDetector {
-        [DllImport("winmm.dll")]
-        public static extern int waveOutGetVolume(IntPtr hwo, out uint dwVolume);
-        public static bool HasAudio() {
-          uint volume;
-          int result = waveOutGetVolume(IntPtr.Zero, out volume);
-          return volume > 0;
-        }
-      }
-    "@
-    
-    while($true) {
-      $hasAudio = [AudioDetector]::HasAudio()
-      Write-Output $hasAudio
-      Start-Sleep -Milliseconds 500
+    try {
+      const isPlaying = await isMusicPlaying();
+
+      // Send the music status to the renderer process
+      mainWindow.webContents.send('music-status-changed', isPlaying);
+    } catch (error) {
+      console.warn("[MainAudio] Music detection error:", error.message);
     }
-  `;
+  }, 3000);
 
-  audioProcess = spawn("powershell", ["-Command", script]);
+  // Initial check
+  setTimeout(async () => {
+    if (!isActive || !mainWindow) return;
 
-  audioProcess.stdout.on("data", (data) => {
-    const hasAudio = data.toString().trim() === "True";
-    updateAudioState(hasAudio);
-  });
-
-  audioProcess.on("error", (error) => {
-    console.log(
-      "[MainAudio] ERROR: Windows audio detection failed:",
-      error.message,
-    );
-  });
-
-  return true;
-}
-
-// Linux PulseAudio detection
-function startLinuxAudioDetection() {
-  console.log("[MainAudio] Starting Linux audio detection...");
-
-  // Use pactl to monitor audio
-  audioProcess = spawn("bash", [
-    "-c",
-    `
-    while true; do
-      # Check if any sink is playing audio
-      pactl list sinks | grep -q "State: RUNNING" && echo "true" || echo "false"
-      sleep 0.5
-    done
-  `,
-  ]);
-
-  audioProcess.stdout.on("data", (data) => {
-    const hasAudio = data.toString().trim() === "true";
-    updateAudioState(hasAudio);
-  });
-
-  audioProcess.on("error", (error) => {
-    console.log(
-      "[MainAudio] ERROR: Linux audio detection failed:",
-      error.message,
-    );
-    console.log(
-      "[MainAudio] Install required package: sudo apt install pulseaudio-utils",
-    );
-  });
-
-  return true;
-}
-
-// Update audio state and notify renderer
-function updateAudioState(newState) {
-  if (isAudioActive !== newState) {
-    isAudioActive = newState;
-    console.log(
-      `[MainAudio] Audio state changed: ${newState ? "playing" : "stopped"}`,
-    );
-
-    // Send to renderer process
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send("audio-state-changed", newState);
+    try {
+      const isPlaying = await isMusicPlaying();
+      mainWindow.webContents.send('music-status-changed', isPlaying);
+      console.log("[MainAudio] Music detection initialized");
+    } catch (error) {
+      console.warn("[MainAudio] Initial music check failed:", error.message);
     }
+  }, 1000); // Wait 1 second for window to be ready
+}
+
+/**
+ * Stop system audio detection
+ */
+export function stopSystemAudio() {
+  isActive = false;
+
+  if (musicCheckInterval) {
+    clearInterval(musicCheckInterval);
+    musicCheckInterval = null;
+    console.log("[MainAudio] Music detection stopped");
   }
+
+  mainWindow = null;
 }
 
-// Cleanup
-function stopSystemAudio() {
-  if (audioProcess) {
-    audioProcess.kill();
-    audioProcess = null;
+/**
+ * Toggle system audio detection on/off
+ */
+export function toggleSystemAudio() {
+  if (isActive) {
+    console.log("[MainAudio] Pausing music detection");
+    isActive = false;
+  } else {
+    console.log("[MainAudio] Resuming music detection");
+    isActive = true;
   }
-}
 
-// Manual toggle for testing
-function toggleSystemAudio() {
-  updateAudioState(!isAudioActive);
-  return isAudioActive;
+  return isActive;
 }
-
-export { initSystemAudio, stopSystemAudio, toggleSystemAudio };
