@@ -16,9 +16,6 @@ if (-not $SkipDeps) {
     npm install --omit=optional
 }
 
-Write-Host "Running prebuild..."
-npm run prebuild
-
 Write-Host "Building Windows packages..."
 npx electron-builder --win
 
