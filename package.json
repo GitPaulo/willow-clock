@@ -8,12 +8,7 @@
     "start": "electron .",
     "dev": "electron . --reload",
     "prebuild": "cp node_modules/pixi.js/dist/pixi.mjs public/pixi.js && cp -r assets public/",
-    "build:linux": "electron-builder --linux",
-    "build:windows": "electron-builder --win",
     "build:mediastate": "powershell -File src\\audio\\lib\\windows\\build-mediastate-windows.ps1",
-    "linux": "./deploy/linux.sh",
-    "windows": "./deploy/windows.sh",
-    "clean": "rm -rf dist/",
     "lint": "eslint .",
     "test:music": "node ./tests/os-audio.js"
   },
@@ -53,6 +48,7 @@
       "main.js",
       "public/**/*",
       "src/**/*",
+      "bin/**/*",
       "node_modules/**/*"
     ],
     "mac": {
@@ -83,9 +79,8 @@
           ]
         }
       ],
-      "publisherName": "Willow Clock",
       "verifyUpdateCodeSignature": false,
-      "sign": false
+      "forceCodeSigning": false
     },
     "linux": {
       "target": [
@@ -114,7 +109,11 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "installerLanguages": [
+        "en_US"
+      ],
+      "language": "1033"
     }
   }
 }

@@ -133,8 +133,6 @@ function parseSimpleYAML(yamlText) {
 }
 
 initializeApp();
-
-// Load speech messages when renderer starts
 loadSpeechMessages();
 
 async function loadSpriteAssets() {
