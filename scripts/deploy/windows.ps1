@@ -9,13 +9,6 @@ if ($currentPath.Path -match "^\\\\wsl") {
     exit 1
 }
 
-Write-Host "Building for Windows..."
-
-if (-not $SkipDeps) {
-    Write-Host "Installing dependencies..."
-    npm install --omit=optional
-}
-
 Write-Host "Building Windows packages..."
 npx electron-builder --win
 
