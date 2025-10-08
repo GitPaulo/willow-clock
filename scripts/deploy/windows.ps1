@@ -9,6 +9,11 @@ if ($currentPath.Path -match "^\\\\wsl") {
     exit 1
 }
 
+# TODO: 
+# build tool install
+# python install
+# prebuild has to copy things
+
 Write-Host "Building Windows packages..."
 npx electron-builder --win
 
