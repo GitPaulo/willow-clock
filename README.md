@@ -1,4 +1,4 @@
-# Willow Clock
+# Willow Clock 🐾
 
 Fun little clock app with characters designed by my friend for my friend :3
 
