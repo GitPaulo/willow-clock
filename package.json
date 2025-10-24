@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --reload",
-    "prebuild": "cp node_modules/pixi.js/dist/pixi.mjs public/pixi.js && cp -r assets public/",
+    "prebuild": "cp node_modules/pixi.js/dist/pixi.mjs public/pixi.js",
     "build:mediastate": "powershell -File src\\audio\\lib\\windows\\build-mediastate-windows.ps1",
     "lint": "eslint .",
     "test:music": "node ./tests/os-audio.js"

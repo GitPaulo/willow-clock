@@ -989,6 +989,10 @@
               <input type="checkbox" id="setting-audio-on-start" />
               <span>Play music on startup</span>
             </label>
+            <label class="setting-item">
+              <input type="checkbox" id="setting-timer-alarm" />
+              <span>Play sound when timer completes</span>
+            </label>
           </div>
 
           <!-- Visual Settings -->
@@ -998,6 +1002,14 @@
               <input type="checkbox" id="setting-cursor-trail" />
               <span>Show cursor trail (paw prints)</span>
             </label>
+            <label class="setting-item">
+              <input type="checkbox" id="setting-debug-mode" />
+              <span>Show debug info (FPS, state)</span>
+            </label>
+            <label class="setting-item">
+              <input type="checkbox" id="setting-mode-change-speech" />
+              <span>Speak when switching modes</span>
+            </label>
           </div>
 
           <!-- Weather Settings -->
@@ -1005,7 +1017,27 @@
             <h3>Weather</h3>
             <label class="setting-item">
               <span>Update frequency (minutes)</span>
-              <input type="number" id="setting-weather-frequency" min="5" max="120" step="5" class="setting-input" />
+              <input type="number" id="setting-weather-frequency" min="1" max="120" step="1" class="setting-input" />
+            </label>
+            <label class="setting-item">
+              <span>Temperature unit</span>
+              <select id="setting-temperature-unit" class="setting-input">
+                <option value="celsius">Celsius (°C)</option>
+                <option value="fahrenheit">Fahrenheit (°F)</option>
+              </select>
+            </label>
+          </div>
+
+          <!-- Behavior Settings -->
+          <div class="settings-section">
+            <h3>Behavior</h3>
+            <label class="setting-item">
+              <span>Day mode starts at (hour)</span>
+              <input type="number" id="setting-day-start" min="0" max="23" step="1" class="setting-input" />
+            </label>
+            <label class="setting-item">
+              <span>Night mode starts at (hour)</span>
+              <input type="number" id="setting-day-end" min="0" max="23" step="1" class="setting-input" />
             </label>
           </div>
 

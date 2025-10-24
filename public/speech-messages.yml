@@ -19,6 +19,16 @@ time:
   - "Another moment passes by."
   - "Tick tock, tick tock..."
 
+modes:
+  clock:
+    - "Time to check the time!"
+  stopwatch:
+    - "This is a stopwatch! :3"
+  timer:
+    - "Ooo, setting a timer for something?"
+  focus:
+    - "Time to get things done! Focus!"
+
 weather:
   Clear:
     - "What a beautiful clear day!"

@@ -15,7 +15,6 @@ import {
 import {
   playTextBeep,
   initTextSound,
-  getAudioState,
 } from "./audio/text-audio.js";
 import { getCurrentWeather } from "./weather/weather.js";
 import {
@@ -35,6 +34,7 @@ let focusIntervalId = null;
 let focusElapsedTime = 0;
 let cursorTrailInstance = null;
 let backgroundMusic = null;
+let timerAlarmAudio = null;
 let isMuted = false;
 let weatherData = null;
 let lastWeatherUpdate = 0;
@@ -54,7 +54,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupSettings();
   setupAudioDetection();
   setupTestFunctions();
+  applyDebugMode();
 });
+
+function applyDebugMode() {
+  const debugMode = getSetting("debugMode", false);
+  const infoElement = document.getElementById("info");
+  if (infoElement) {
+    infoElement.style.display = debugMode ? "block" : "none";
+  }
+}
 
 function setupLoadingScreen() {
   const loadingScreenElement = document.getElementById("loading-screen");
@@ -154,10 +163,20 @@ function setupSettings() {
   const audioOnStartCheckbox = document.getElementById(
     "setting-audio-on-start",
   );
+  const timerAlarmCheckbox = document.getElementById("setting-timer-alarm");
   const cursorTrailCheckbox = document.getElementById("setting-cursor-trail");
+  const debugModeCheckbox = document.getElementById("setting-debug-mode");
+  const modeChangeSpeechCheckbox = document.getElementById(
+    "setting-mode-change-speech",
+  );
   const weatherFrequencyInput = document.getElementById(
     "setting-weather-frequency",
   );
+  const temperatureUnitSelect = document.getElementById(
+    "setting-temperature-unit",
+  );
+  const dayStartInput = document.getElementById("setting-day-start");
+  const dayEndInput = document.getElementById("setting-day-end");
   const hardwareAccelerationCheckbox = document.getElementById(
     "setting-hardware-acceleration",
   );
@@ -171,10 +190,22 @@ function setupSettings() {
 
     if (audioOnStartCheckbox)
       audioOnStartCheckbox.checked = settings.audioOnStart;
+    if (timerAlarmCheckbox)
+      timerAlarmCheckbox.checked = settings.timerAlarmSound;
     if (cursorTrailCheckbox)
       cursorTrailCheckbox.checked = settings.cursorTrailEnabled;
+    if (debugModeCheckbox)
+      debugModeCheckbox.checked = settings.debugMode;
+    if (modeChangeSpeechCheckbox)
+      modeChangeSpeechCheckbox.checked = settings.modeChangeSpeech;
     if (weatherFrequencyInput)
       weatherFrequencyInput.value = settings.weatherUpdateFrequency / 60000; // Convert ms to minutes
+    if (temperatureUnitSelect)
+      temperatureUnitSelect.value = settings.temperatureUnit;
+    if (dayStartInput)
+      dayStartInput.value = settings.dayNightTransitionHours.start;
+    if (dayEndInput)
+      dayEndInput.value = settings.dayNightTransitionHours.end;
     if (hardwareAccelerationCheckbox)
       hardwareAccelerationCheckbox.checked = settings.hardwareAcceleration;
     if (fpsTargetInput) fpsTargetInput.value = settings.fpsTarget;
@@ -188,9 +219,17 @@ function setupSettings() {
 
     const newSettings = {
       audioOnStart: audioOnStartCheckbox?.checked ?? true,
+      timerAlarmSound: timerAlarmCheckbox?.checked ?? true,
       cursorTrailEnabled: cursorTrailCheckbox?.checked ?? true,
+      debugMode: debugModeCheckbox?.checked ?? false,
+      modeChangeSpeech: modeChangeSpeechCheckbox?.checked ?? true,
       weatherUpdateFrequency:
-        (parseInt(weatherFrequencyInput?.value) || 30) * 60000, // Convert minutes to ms
+        (parseInt(weatherFrequencyInput?.value) || 2) * 60000, // Convert minutes to ms
+      temperatureUnit: temperatureUnitSelect?.value ?? "celsius",
+      dayNightTransitionHours: {
+        start: parseInt(dayStartInput?.value) || 6,
+        end: parseInt(dayEndInput?.value) || 18,
+      },
       hardwareAcceleration: hardwareAccelerationCheckbox?.checked ?? true,
       fpsTarget: parseInt(fpsTargetInput?.value) || 60,
     };
@@ -231,8 +270,15 @@ function setupSettings() {
       cursorTrailInstance = null;
     }
 
-    // Audio on start doesn't need immediate application (only on startup)
-    // Weather frequency will be applied on next update cycle
+    // Apply debug mode setting
+    applyDebugMode();
+
+    // Update day/night state with new transition times
+    const { start, end } = settings.dayNightTransitionHours;
+    updateBaseStateFromTime(start, end);
+
+    // Weather display will update on next cycle
+    // Timer alarm and audio settings apply on next use
     // Hardware acceleration and FPS target require restart
 
     console.log("[Settings] Applied settings:", settings);
@@ -316,7 +362,16 @@ function setupBackgroundMusic() {
   backgroundMusic = elements["background-music"];
   const { "audio-toggle": audioToggle, "volume-icon": volumeIcon } = elements;
 
-  if (!backgroundMusic || !audioToggle || !volumeIcon) return;
+  // Setup timer alarm audio
+  timerAlarmAudio = new Audio();
+  timerAlarmAudio.volume = 0.5;
+  timerAlarmAudio.preload = "auto";
+
+  // Create source element with explicit MIME type
+  const source = document.createElement("source");
+  source.src = "./assets/audio/timer-end.mp3";
+  source.type = "audio/mpeg";
+  timerAlarmAudio.appendChild(source); if (!backgroundMusic || !audioToggle || !volumeIcon) return;
 
   // Set audio properties to prevent crackling
   backgroundMusic.volume = 0.08;
@@ -448,6 +503,11 @@ function switchMode() {
   document.getElementById(nextModeName)?.classList.add("active");
 
   if (nextModeName === MODE.FOCUS) startFocusTimer();
+
+  // Trigger speech for mode change if enabled
+  if (getSetting("modeChangeSpeech", true)) {
+    triggerModeSpeech(nextModeName);
+  }
 }
 function setupStopwatch() {
   const stopwatchElements = getElements([
@@ -579,6 +639,12 @@ function setupTimer() {
         timerInputElement.readOnly = isTimerLocked;
         lockToggleButton.textContent = isTimerLocked ? "Unlock" : "Lock";
         lockToggleButton.disabled = false;
+
+        // Play alarm sound if enabled
+        if (getSetting("timerAlarmSound", true) && timerAlarmAudio) {
+          timerAlarmAudio.currentTime = 0;
+          timerAlarmAudio.play().catch(err => console.log("[Timer] Alarm play failed:", err));
+        }
       }
       updateTimerDisplay();
     }, 1000);
@@ -677,7 +743,8 @@ function setupTestFunctions() {
     playTextBeep();
   };
 
-  window.testAudioStatus = () => {
+  window.testAudioStatus = async () => {
+    const { getAudioState } = await import("./audio/text-audio.js");
     console.log("[App] TextAudio Status:", getAudioState());
     return getAudioState();
   };
@@ -755,16 +822,22 @@ async function updateWeather() {
 }
 
 function triggerWeatherSpeech(condition) {
-  if (!window.getRandomSpeech || !window.startTypewriter || !window.speechBox) {
+  if (!window.SPEECH_MESSAGES || !window.startTypewriter || !window.speechBox) {
     console.log("[Weather] Speech system not available yet");
     return;
   }
 
   try {
-    const weatherMessages = window.getRandomSpeech("weather");
-    const conditionMessages = weatherMessages?.[condition];
+    const weatherMessages = window.SPEECH_MESSAGES?.weather;
 
-    if (!conditionMessages?.length) {
+    if (!weatherMessages || typeof weatherMessages !== 'object') {
+      console.log("[Weather] No weather messages available");
+      return;
+    }
+
+    const conditionMessages = weatherMessages[condition];
+
+    if (!conditionMessages || !Array.isArray(conditionMessages) || conditionMessages.length === 0) {
       console.log(
         `[Weather] No speech messages found for condition: ${condition}`,
       );
@@ -782,7 +855,37 @@ function triggerWeatherSpeech(condition) {
   }
 }
 
-function updateWeatherDisplay() {
+function triggerModeSpeech(modeName) {
+  if (!window.SPEECH_MESSAGES || !window.startTypewriter || !window.speechBox) {
+    console.log("[Mode] Speech system not available yet");
+    return;
+  }
+
+  try {
+    const modeMessages = window.SPEECH_MESSAGES?.modes;
+
+    if (!modeMessages || typeof modeMessages !== 'object') {
+      console.log("[Mode] No mode messages available");
+      return;
+    }
+
+    // Map MODE enum values to message keys
+    // "clock-mode" -> "clock", "stopwatch" -> "stopwatch", etc.
+    const modeKey = modeName === "clock-mode" ? "clock" : modeName;
+    const messages = modeMessages[modeKey];
+
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      console.log(`[Mode] No speech messages found for mode: ${modeKey}`);
+      return;
+    }
+
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    console.log(`[Mode] Triggering speech for ${modeKey}: "${randomMessage}"`);
+    window.startTypewriter(window.speechBox, randomMessage);
+  } catch (error) {
+    console.error("[Mode] Failed to trigger speech:", error);
+  }
+} function updateWeatherDisplay() {
   const weatherElement = document.getElementById("weather");
   if (!weatherElement || !weatherData) {
     if (weatherElement) weatherElement.textContent = "Loading weather...";
@@ -790,10 +893,17 @@ function updateWeatherDisplay() {
   }
 
   const { temperature, condition } = weatherData;
-  const tempText =
-    temperature !== null
-      ? `${Math.round(temperature)}°C`
-      : "Weather unavailable";
+  const unit = getSetting("temperatureUnit", "celsius");
+
+  let tempText = "Weather unavailable";
+  if (temperature !== null) {
+    const displayTemp = unit === "fahrenheit"
+      ? Math.round(temperature * 9 / 5 + 32)
+      : Math.round(temperature);
+    const unitSymbol = unit === "fahrenheit" ? "°F" : "°C";
+    tempText = `${displayTemp}${unitSymbol}`;
+  }
+
   weatherElement.textContent = `${tempText}, ${condition}`;
 }
 
@@ -805,5 +915,8 @@ export function initializeApp() {
   initializeState();
   updateClock();
   setInterval(updateClock, 1000);
-  setInterval(updateBaseStateFromTime, 60000);
+  setInterval(() => {
+    const { start, end } = getSetting("dayNightTransitionHours", { start: 6, end: 18 });
+    updateBaseStateFromTime(start, end);
+  }, 60000);
 }

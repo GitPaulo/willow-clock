@@ -1,12 +1,21 @@
 const DEFAULT_SETTINGS = {
   // Audio settings
   audioOnStart: true,
+  timerAlarmSound: true,
 
   // Visual settings
   cursorTrailEnabled: true,
+  debugMode: false,
+
+  // Speech settings
+  modeChangeSpeech: true,
 
   // Weather settings
-  weatherUpdateFrequency: 1800000, // 30 minutes in milliseconds
+  weatherUpdateFrequency: 120000, // 2 minutes in milliseconds
+  temperatureUnit: "celsius", // "celsius" or "fahrenheit"
+
+  // Behavior settings
+  dayNightTransitionHours: { start: 6, end: 18 }, // Day: 6am-6pm, Night: 6pm-6am
 
   // Performance settings
   hardwareAcceleration: true, // Requires app restart

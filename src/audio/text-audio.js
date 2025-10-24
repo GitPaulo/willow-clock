@@ -44,6 +44,12 @@ export function playTextBeep() {
     osc.connect(gain).connect(audioCtx.destination);
     osc.start(now);
     osc.stop(now + 0.05);
+
+    // Cleanup after sound completes to prevent memory leaks
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
   } catch (error) {
     console.warn("[TextAudio] Error playing text beep:", error);
   }
@@ -72,6 +78,12 @@ export function playTextBeepSoft() {
     osc.connect(gain).connect(audioCtx.destination);
     osc.start(now);
     osc.stop(now + 0.03);
+
+    // Cleanup after sound completes to prevent memory leaks
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
   } catch (error) {
     console.warn("[TextAudio] Error playing soft text beep:", error);
   }

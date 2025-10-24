@@ -10,7 +10,10 @@ import {
 } from "../public/pixi.js";
 import { initializeApp, handleClick } from "./app.js";
 import { onStateChange, getCurrentState } from "./state-machine.js";
-import { initTextSound, playTextBeepSoft } from "./audio/text-audio.js";
+import {
+  playTextBeepSoft,
+  initTextSound,
+} from "./audio/text-audio.js";
 import { getSetting } from "./settings.js";
 
 // Sprite sheet configuration - add new sprites here
@@ -94,7 +97,7 @@ async function loadSpeechMessages() {
 
     // Parse YAML - simple manual parsing for basic structure
     SPEECH_MESSAGES = parseSimpleYAML(yamlText);
-    console.log("[Renderer] Speech messages loaded from YAML");
+    console.log("[Renderer] Speech messages loaded from YAML", SPEECH_MESSAGES);
   } catch (error) {
     console.error("[Renderer] Failed to load speech messages:", error);
     // Fallback messages
@@ -112,20 +115,46 @@ function parseSimpleYAML(yamlText) {
   const messages = {};
   const lines = yamlText.split("\n");
   let currentCategory = null;
+  let currentSubCategory = null;
+  let indent = 0;
 
   for (const line of lines) {
+    if (!line.trim() || line.trim().startsWith("#")) continue;
+
+    // Calculate indentation (number of leading spaces)
+    const lineIndent = line.search(/\S/);
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
 
     if (trimmed.endsWith(":") && !trimmed.startsWith("-")) {
-      // Category line
-      currentCategory = trimmed.slice(0, -1);
-      messages[currentCategory] = [];
+      // Category or subcategory line
+      const key = trimmed.slice(0, -1);
+
+      if (lineIndent === 0) {
+        // Top-level category
+        currentCategory = key;
+        currentSubCategory = null;
+        messages[currentCategory] = [];
+        indent = lineIndent;
+      } else if (lineIndent > indent && currentCategory) {
+        // Subcategory (nested under current category)
+        currentSubCategory = key;
+        if (!messages[currentCategory] || Array.isArray(messages[currentCategory])) {
+          messages[currentCategory] = {};
+        }
+        messages[currentCategory][currentSubCategory] = [];
+      }
     } else if (trimmed.startsWith('- "') && trimmed.endsWith('"')) {
       // Message line
-      if (currentCategory) {
-        const message = trimmed.slice(3, -1); // Remove '- "' and '"'
-        messages[currentCategory].push(message);
+      const message = trimmed.slice(3, -1); // Remove '- "' and '"'
+
+      if (currentSubCategory && messages[currentCategory]) {
+        // Add to subcategory
+        messages[currentCategory][currentSubCategory].push(message);
+      } else if (currentCategory) {
+        // Add to main category
+        if (Array.isArray(messages[currentCategory])) {
+          messages[currentCategory].push(message);
+        }
       }
     }
   }
@@ -277,8 +306,10 @@ function startTypewriter(speechBox, text) {
       data.textObj.text = data.currentText;
       data.currentIndex++;
 
-      // Play sound effect for visible characters (not spaces)
+      // Play sound effect for visible characters (not spaces or newlines)
       if (SPEECH_CONFIG.soundEnabled && char !== " " && char !== "\n") {
+        // Initialize audio context if needed (required by browser autoplay policy)
+        initTextSound();
         playTextBeepSoft();
       }
     } else {
@@ -312,6 +343,11 @@ async function initPixi() {
   console.log("[Renderer] Initializing PIXI.js...");
   try {
     const container = document.getElementById("pixi-container");
+    if (!container) {
+      console.error("[Renderer] pixi-container element not found");
+      return createFallbackAnimation();
+    }
+
     const width = Math.max(
       Math.floor(container.getBoundingClientRect().width) || 340,
       340,
@@ -363,6 +399,7 @@ async function initPixi() {
     window.speechBox = speechBox;
     window.startTypewriter = startTypewriter;
     window.getRandomSpeech = getRandomSpeech;
+    window.SPEECH_MESSAGES = SPEECH_MESSAGES;
 
     app.renderer.on("resize", () => {
       centerX = app.screen.width / 2;

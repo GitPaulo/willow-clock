@@ -68,9 +68,9 @@ function exitOverlayState() {
   transitionTo(previousState);
 }
 
-export function updateBaseStateFromTime() {
+export function updateBaseStateFromTime(dayStart = 6, dayEnd = 18) {
   const hours = new Date().getHours();
-  const baseState = hours >= 6 && hours < 18 ? STATES.DAY : STATES.NIGHT;
+  const baseState = hours >= dayStart && hours < dayEnd ? STATES.DAY : STATES.NIGHT;
   transitionToBaseState(baseState);
 }
 
