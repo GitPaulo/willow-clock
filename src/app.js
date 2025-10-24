@@ -18,6 +18,13 @@ import {
   getAudioState,
 } from "./audio/text-audio.js";
 import { getCurrentWeather } from "./weather/weather.js";
+import {
+  loadSettings,
+  saveSettings,
+  getSettings,
+  getSetting,
+  resetSettings,
+} from "./settings.js";
 
 let activeModeIndex = 0;
 let stopwatchIntervalId = null;
@@ -33,7 +40,10 @@ let weatherData = null;
 let lastWeatherUpdate = 0;
 let previousWeatherCondition = null;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Load settings first
+  await loadSettings();
+
   setupLoadingScreen();
   setupModeSystem();
   setupStopwatch();
@@ -41,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupFocus();
   setupCursorTrail();
   setupBackgroundMusic();
+  setupSettings();
   setupAudioDetection();
   setupTestFunctions();
 });
@@ -99,6 +110,16 @@ function setupLoadingScreen() {
 async function startBackgroundMusic() {
   if (!backgroundMusic) return;
 
+  // Check if audio should auto-play based on settings
+  const audioOnStart = getSetting("audioOnStart", true);
+
+  if (!audioOnStart) {
+    console.log("[App] Auto-play disabled by settings");
+    isMuted = true;
+    backgroundMusic.muted = true;
+    return;
+  }
+
   try {
     // Set volume before playing to prevent crackling
     backgroundMusic.volume = 0.08;
@@ -112,6 +133,178 @@ function setupCursorTrail() {
   cursorTrailInstance = new CursorTrail();
   cursorTrailInstance.init();
   window.cursorTrail = cursorTrailInstance;
+
+  // Apply cursor trail setting
+  const cursorTrailEnabled = getSetting("cursorTrailEnabled", true);
+  if (!cursorTrailEnabled && cursorTrailInstance) {
+    cursorTrailInstance.destroy();
+    cursorTrailInstance = null;
+  }
+}
+
+function setupSettings() {
+  const settingsToggle = document.getElementById("settings-toggle");
+  const settingsModal = document.getElementById("settings-modal");
+  const closeSettingsBtn = document.getElementById("close-settings");
+  const settingsBackdrop = document.querySelector(".settings-backdrop");
+  const saveBtn = document.getElementById("settings-save");
+  const resetBtn = document.getElementById("settings-reset");
+
+  // Get all setting inputs
+  const audioOnStartCheckbox = document.getElementById(
+    "setting-audio-on-start",
+  );
+  const cursorTrailCheckbox = document.getElementById("setting-cursor-trail");
+  const weatherFrequencyInput = document.getElementById(
+    "setting-weather-frequency",
+  );
+  const hardwareAccelerationCheckbox = document.getElementById(
+    "setting-hardware-acceleration",
+  );
+  const fpsTargetInput = document.getElementById("setting-fps-target");
+
+  if (!settingsToggle || !settingsModal) return;
+
+  // Function to load settings into UI
+  function loadSettingsUI() {
+    const settings = getSettings();
+
+    if (audioOnStartCheckbox)
+      audioOnStartCheckbox.checked = settings.audioOnStart;
+    if (cursorTrailCheckbox)
+      cursorTrailCheckbox.checked = settings.cursorTrailEnabled;
+    if (weatherFrequencyInput)
+      weatherFrequencyInput.value = settings.weatherUpdateFrequency / 60000; // Convert ms to minutes
+    if (hardwareAccelerationCheckbox)
+      hardwareAccelerationCheckbox.checked = settings.hardwareAcceleration;
+    if (fpsTargetInput) fpsTargetInput.value = settings.fpsTarget;
+
+    console.log("[Settings] Loaded settings into UI:", settings);
+  }
+
+  // Function to save settings from UI
+  async function saveSettingsUI() {
+    const oldSettings = getSettings();
+
+    const newSettings = {
+      audioOnStart: audioOnStartCheckbox?.checked ?? true,
+      cursorTrailEnabled: cursorTrailCheckbox?.checked ?? true,
+      weatherUpdateFrequency:
+        (parseInt(weatherFrequencyInput?.value) || 30) * 60000, // Convert minutes to ms
+      hardwareAcceleration: hardwareAccelerationCheckbox?.checked ?? true,
+      fpsTarget: parseInt(fpsTargetInput?.value) || 60,
+    };
+
+    const success = await saveSettings(newSettings);
+
+    if (success) {
+      console.log("[Settings] Settings saved successfully");
+      applySettings(newSettings);
+
+      // Check if restart-required settings changed
+      const restartRequired =
+        oldSettings.hardwareAcceleration !== newSettings.hardwareAcceleration ||
+        oldSettings.fpsTarget !== newSettings.fpsTarget;
+
+      if (restartRequired) {
+        showSettingsNotification(
+          "Settings saved! Restart the app for changes to take effect.",
+        );
+      } else {
+        showSettingsNotification("Settings saved!");
+      }
+    } else {
+      console.error("[Settings] Failed to save settings");
+      showSettingsNotification("Failed to save settings", true);
+    }
+  }
+
+  // Function to apply settings to the app
+  function applySettings(settings) {
+    // Apply cursor trail setting
+    if (settings.cursorTrailEnabled && !cursorTrailInstance) {
+      cursorTrailInstance = new CursorTrail();
+      cursorTrailInstance.init();
+      window.cursorTrail = cursorTrailInstance;
+    } else if (!settings.cursorTrailEnabled && cursorTrailInstance) {
+      cursorTrailInstance.destroy();
+      cursorTrailInstance = null;
+    }
+
+    // Audio on start doesn't need immediate application (only on startup)
+    // Weather frequency will be applied on next update cycle
+    // Hardware acceleration and FPS target require restart
+
+    console.log("[Settings] Applied settings:", settings);
+  }
+
+  // Function to show notification
+  function showSettingsNotification(message, isError = false) {
+    // Simple console notification for now
+    if (isError) {
+      console.error(`[Settings] ${message}`);
+    } else {
+      console.log(`[Settings] ${message}`);
+    }
+
+    // Optional: Could add a visual toast notification here
+    // For now, user sees the message in console
+  }
+
+  // Open settings modal
+  settingsToggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    console.log("[Settings] Opening settings modal");
+    loadSettingsUI(); // Load current settings
+    settingsModal.classList.remove("hidden");
+  });
+
+  // Close settings modal via close button
+  if (closeSettingsBtn) {
+    closeSettingsBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      console.log("[Settings] Closing settings modal");
+      settingsModal.classList.add("hidden");
+    });
+  }
+
+  // Close settings modal via backdrop click
+  if (settingsBackdrop) {
+    settingsBackdrop.addEventListener("click", () => {
+      console.log("[Settings] Closing settings modal (backdrop click)");
+      settingsModal.classList.add("hidden");
+    });
+  }
+
+  // Close settings modal via ESC key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !settingsModal.classList.contains("hidden")) {
+      console.log("[Settings] Closing settings modal (ESC key)");
+      settingsModal.classList.add("hidden");
+    }
+  });
+
+  // Save button
+  if (saveBtn) {
+    saveBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await saveSettingsUI();
+      settingsModal.classList.add("hidden");
+    });
+  }
+
+  // Reset button
+  if (resetBtn) {
+    resetBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (confirm("Are you sure you want to reset all settings to defaults?")) {
+        await resetSettings();
+        loadSettingsUI(); // Reload UI with defaults
+        applySettings(getSettings());
+        showSettingsNotification("Settings reset to defaults");
+      }
+    });
+  }
 }
 
 function setupBackgroundMusic() {
@@ -519,9 +712,14 @@ function updateClock() {
   });
   document.getElementById("date").textContent = date;
 
-  // Update weather every 10 seconds for testing
+  // Update weather based on settings frequency
   const currentTime = Date.now();
-  if (!weatherData || currentTime - lastWeatherUpdate > 10000) {
+  const weatherUpdateFrequency = getSetting("weatherUpdateFrequency", 1800000); // Default 30 minutes
+
+  if (
+    !weatherData ||
+    currentTime - lastWeatherUpdate > weatherUpdateFrequency
+  ) {
     updateWeather();
   }
 

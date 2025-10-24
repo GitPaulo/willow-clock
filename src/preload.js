@@ -24,6 +24,11 @@ contextBridge.exposeInMainWorld("windowControls", {
   close: () => ipcRenderer.send("window:close"),
 });
 
+contextBridge.exposeInMainWorld("settingsAPI", {
+  load: () => ipcRenderer.invoke("settings:load"),
+  save: (settings) => ipcRenderer.invoke("settings:save", settings),
+});
+
 window.addEventListener("DOMContentLoaded", () => {
   const replaceText = (selector, text) => {
     const element = document.getElementById(selector);

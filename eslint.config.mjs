@@ -58,6 +58,7 @@ export default [
     files: [
       "src/app.js",
       "src/renderer.js",
+      "src/settings.js",
       "src/utils.js",
       "src/state-machine.js",
       "src/audio/system-audio.js",
@@ -85,9 +86,12 @@ export default [
         URLSearchParams: "readonly",
         requestAnimationFrame: "readonly",
         cancelAnimationFrame: "readonly",
+        performance: "readonly",
+        confirm: "readonly",
         // Electron renderer globals (exposed via contextBridge)
         audioAPI: "readonly",
         windowControls: "readonly",
+        settingsAPI: "readonly",
         // PIXI.js globals (if used)
         PIXI: "readonly",
       },

@@ -1,5 +1,3 @@
-// Pure utility functions only
-
 // Mode enum
 export const MODE = {
   CLOCK: "clock-mode",

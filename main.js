@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs/promises";
 import {
   initSystemAudio,
   stopSystemAudio,
@@ -9,6 +10,30 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+function getSettingsPath() {
+  const userHome =
+    process.env.HOME || process.env.USERPROFILE || process.env.HOMEPATH;
+  return path.join(userHome, ".willow-clock", "settings.json");
+}
+
+async function applyHardwareAccelerationSetting() {
+  try {
+    const settingsPath = getSettingsPath();
+    const data = await fs.readFile(settingsPath, "utf-8");
+    const settings = JSON.parse(data);
+
+    if (settings.hardwareAcceleration === false) {
+      app.disableHardwareAcceleration();
+      console.log("[Main] Hardware acceleration disabled");
+    } else {
+      console.log("[Main] Hardware acceleration enabled");
+    }
+  } catch {
+    // File doesn't exist or error - use default (enabled)
+    console.log("[Main] Using default hardware acceleration (enabled)");
+  }
+}
 
 function createWindow() {
   const isWindows = process.platform === "win32";
@@ -65,6 +90,35 @@ function createWindow() {
   ipcMain.handle("toggle-audio-detection", () => toggleSystemAudio());
   ipcMain.handle("stop-audio-detection", () => stopSystemAudio());
 
+  // Settings IPC handlers
+  ipcMain.handle("settings:load", async () => {
+    try {
+      const settingsPath = getSettingsPath();
+      const data = await fs.readFile(settingsPath, "utf-8");
+      return JSON.parse(data);
+    } catch {
+      // File doesn't exist or is invalid, return empty object (will use defaults)
+      return {};
+    }
+  });
+
+  ipcMain.handle("settings:save", async (event, settings) => {
+    try {
+      const settingsPath = getSettingsPath();
+      const settingsDir = path.dirname(settingsPath);
+
+      // Ensure directory exists
+      await fs.mkdir(settingsDir, { recursive: true });
+
+      // Write settings file
+      await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2));
+      return true;
+    } catch (error) {
+      console.error("[Main] Failed to save settings:", error);
+      return false;
+    }
+  });
+
   // Window controls (from preload)
   ipcMain.on("window:minimize", (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
@@ -84,6 +138,9 @@ function createWindow() {
 
   return mainWindow;
 }
+
+// Apply hardware acceleration setting before app initialization
+applyHardwareAccelerationSetting();
 
 app.whenReady().then(() => {
   // Audio optimizations for better playback

@@ -11,6 +11,7 @@ import {
 import { initializeApp, handleClick } from "./app.js";
 import { onStateChange, getCurrentState } from "./state-machine.js";
 import { initTextSound, playTextBeepSoft } from "./audio/text-audio.js";
+import { getSetting } from "./settings.js";
 
 // Sprite sheet configuration - add new sprites here
 // Each sprite sheet should be a horizontal strip of frames (128px height)
@@ -302,6 +303,11 @@ function updateStateInfo(state) {
   if (element) element.innerText = state;
 }
 
+function updateFPSInfo(fps) {
+  const element = document.getElementById("fps-info");
+  if (element) element.innerText = fps;
+}
+
 async function initPixi() {
   console.log("[Renderer] Initializing PIXI.js...");
   try {
@@ -323,6 +329,13 @@ async function initPixi() {
       antialias: true,
       resizeTo: container,
     });
+
+    // Apply FPS target from settings
+    const fpsTarget = getSetting("fpsTarget", 60);
+    if (app.ticker) {
+      app.ticker.maxFPS = fpsTarget;
+      console.log(`[Renderer] FPS target set to: ${fpsTarget}`);
+    }
 
     container.appendChild(app.canvas);
     container.style.background = "rgba(255, 255, 255, 0.15)";
@@ -370,6 +383,20 @@ async function initPixi() {
         startTypewriter(speechBox, getRandomSpeech("pet"));
       } else if (newState === "music") {
         startTypewriter(speechBox, getRandomSpeech("music"));
+      }
+    });
+
+    // Track and display FPS
+    let lastTime = performance.now();
+    let frameCount = 0;
+    app.ticker.add(() => {
+      frameCount++;
+      const now = performance.now();
+      if (now >= lastTime + 1000) {
+        const fps = Math.round((frameCount * 1000) / (now - lastTime));
+        updateFPSInfo(fps);
+        frameCount = 0;
+        lastTime = now;
       }
     });
 
