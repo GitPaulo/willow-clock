@@ -17,6 +17,7 @@ import {
   initTextSound,
   getAudioState,
 } from "./audio/text-audio.js";
+import { getCurrentWeather } from "./weather/weather.js";
 
 let activeModeIndex = 0;
 let stopwatchIntervalId = null;
@@ -28,6 +29,9 @@ let focusElapsedTime = 0;
 let cursorTrailInstance = null;
 let backgroundMusic = null;
 let isMuted = false;
+let weatherData = null;
+let lastWeatherUpdate = 0;
+let previousWeatherCondition = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   setupLoadingScreen();
@@ -161,6 +165,7 @@ function setupModeSystem() {
     "mode",
     "clock",
     "date",
+    "weather",
     "stopwatch-time",
     "timer-input",
     "focus-title",
@@ -484,12 +489,23 @@ function setupTestFunctions() {
     return getAudioState();
   };
 
+  window.testWeatherChange = (condition) => {
+    console.log(`[App] Testing weather change to: ${condition}`);
+    if (condition) {
+      triggerWeatherSpeech(condition);
+    } else {
+      console.log(
+        "[App] Available weather conditions:",
+        "Clear, MostlyClear, PartlyCloudy, Overcast, Fog, Rain, Snow, Thunderstorm, etc.",
+      );
+    }
+  };
+
   console.log(
-    "[App] Test functions available: testPet(), testMusic(), testSpeech('message'), testTextBeep(), testAudioStatus()",
+    "[App] Test functions available: testPet(), testMusic(), testSpeech('message'), testTextBeep(), testAudioStatus(), testWeatherChange('condition')",
   );
 }
 
-// App-specific functions moved from utils.js
 function updateClock() {
   const now = new Date();
   const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
@@ -502,6 +518,85 @@ function updateClock() {
     day: "numeric",
   });
   document.getElementById("date").textContent = date;
+
+  // Update weather every 10 seconds for testing
+  const currentTime = Date.now();
+  if (!weatherData || currentTime - lastWeatherUpdate > 10000) {
+    updateWeather();
+  }
+
+  // Display current weather data
+  updateWeatherDisplay();
+}
+
+async function updateWeather() {
+  try {
+    const newWeatherData = await getCurrentWeather();
+    const newCondition = newWeatherData.condition;
+
+    // Announce weather changes
+    if (previousWeatherCondition && previousWeatherCondition !== newCondition) {
+      console.log(
+        `[Weather] Condition changed: ${previousWeatherCondition} -> ${newCondition}`,
+      );
+      triggerWeatherSpeech(newCondition);
+    }
+
+    previousWeatherCondition = newCondition;
+    weatherData = newWeatherData;
+    lastWeatherUpdate = Date.now();
+    console.log("[Weather] Updated:", weatherData);
+  } catch (error) {
+    console.error("[Weather] Update failed:", error);
+    weatherData = {
+      location: "Unknown",
+      temperature: null,
+      condition: "Unknown",
+    };
+  }
+}
+
+function triggerWeatherSpeech(condition) {
+  if (!window.getRandomSpeech || !window.startTypewriter || !window.speechBox) {
+    console.log("[Weather] Speech system not available yet");
+    return;
+  }
+
+  try {
+    const weatherMessages = window.getRandomSpeech("weather");
+    const conditionMessages = weatherMessages?.[condition];
+
+    if (!conditionMessages?.length) {
+      console.log(
+        `[Weather] No speech messages found for condition: ${condition}`,
+      );
+      return;
+    }
+
+    const randomMessage =
+      conditionMessages[Math.floor(Math.random() * conditionMessages.length)];
+    console.log(
+      `[Weather] Triggering speech for ${condition}: "${randomMessage}"`,
+    );
+    window.startTypewriter(window.speechBox, randomMessage);
+  } catch (error) {
+    console.error("[Weather] Failed to trigger speech:", error);
+  }
+}
+
+function updateWeatherDisplay() {
+  const weatherElement = document.getElementById("weather");
+  if (!weatherElement || !weatherData) {
+    if (weatherElement) weatherElement.textContent = "Loading weather...";
+    return;
+  }
+
+  const { temperature, condition } = weatherData;
+  const tempText =
+    temperature !== null
+      ? `${Math.round(temperature)}°C`
+      : "Weather unavailable";
+  weatherElement.textContent = `${tempText}, ${condition}`;
 }
 
 export function handleClick() {

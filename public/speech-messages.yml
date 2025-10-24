@@ -18,3 +18,78 @@ time:
   - "Time keeps flowing..."
   - "Another moment passes by."
   - "Tick tock, tick tock..."
+
+weather:
+  Clear:
+    - "What a beautiful clear day!"
+    - "The sky is so clear and bright!"
+    - "Perfect weather for anything!"
+  MostlyClear:
+    - "It's looking mostly clear out there!"
+    - "Just a few clouds today!"
+  PartlyCloudy:
+    - "Some clouds are rolling in."
+    - "It's getting a bit cloudy."
+    - "Partly cloudy skies ahead!"
+  Overcast:
+    - "The sky is completely overcast."
+    - "Gray clouds everywhere today."
+    - "No sun to be seen!"
+  Fog:
+    - "It's getting quite foggy out there."
+    - "Visibility is really low today."
+    - "Watch out for the thick fog!"
+  FreezingFog:
+    - "Freezing fog is making things icy!"
+    - "Be careful, it's foggy and freezing!"
+  LightDrizzle:
+    - "A light drizzle is starting."
+    - "Just a gentle mist falling."
+  Drizzle:
+    - "It's drizzling outside."
+    - "Light rain is falling."
+  HeavyDrizzle:
+    - "The drizzle is getting heavier."
+    - "Steady light rain now."
+  LightRain:
+    - "Light rain is beginning to fall."
+    - "Just a gentle shower."
+  Rain:
+    - "It's raining now!"
+    - "Time to grab an umbrella!"
+    - "Rain is falling steadily."
+  HeavyRain:
+    - "Heavy rain is pouring down!"
+    - "It's really coming down out there!"
+    - "What a downpour!"
+  LightSnow:
+    - "Light snow is starting to fall!"
+    - "Gentle snowflakes are drifting down."
+  Snow:
+    - "It's snowing!"
+    - "Snow is falling steadily."
+    - "Winter wonderland time!"
+  HeavySnow:
+    - "Heavy snow is coming down!"
+    - "It's a real snowstorm out there!"
+    - "Lots of snow falling!"
+  RainShowers:
+    - "Rain showers are passing through."
+    - "Expect some scattered showers."
+  HeavyShowers:
+    - "Heavy showers are moving in!"
+    - "Intense rain showers ahead!"
+  ViolentRain:
+    - "Violent rain is hammering down!"
+    - "Extreme rainfall right now!"
+  Thunderstorm:
+    - "Thunder and lightning outside!"
+    - "A thunderstorm is brewing!"
+    - "Nature's light show is starting!"
+  ThunderstormHail:
+    - "Thunderstorm with hail!"
+    - "Take cover, hail is falling!"
+    - "Thunder, lightning, and hail!"
+  Unknown:
+    - "The weather is a mystery today."
+    - "I can't tell what the weather is like."

@@ -64,6 +64,7 @@ export default [
       "src/audio/text-audio.js",
       "src/effects/**/*.js",
       "src/window-controls.js",
+      "src/weather/**/*.js",
     ],
     languageOptions: {
       ecmaVersion: 2022,

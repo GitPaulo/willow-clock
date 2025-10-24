@@ -18,7 +18,7 @@ function createWindow() {
   /** @type {Electron.BrowserWindowConstructorOptions} */
   const windowConfig = {
     width: 470,
-    height: 500,
+    height: 512,
     frame: false, // fully custom window
     resizable: true,
     show: false, // show only when ready
