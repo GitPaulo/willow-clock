@@ -4,6 +4,8 @@ Fun little clock app with characters designed by my friend for my friend :3
 
 ![alt text](image.png)
 
+<video controls src="demo.mp4" title="willow clock video"></video>
+
 ### Development
 
 ```bash
