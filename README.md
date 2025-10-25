@@ -2,9 +2,9 @@
 
 Fun little clock app with characters designed by my friend for my friend :3
 
-![alt text](image.png)
+![demo image](image.png)
 
-<video controls src="demo.mp4" title="willow clock video"></video>
+https://github.com/user-attachments/assets/03af833b-6018-4971-b69a-f093dc15fad3
 
 ### Development
 
