@@ -1,6 +1,3 @@
-// State machine for Willow Clock
-// Base states (Day/Night) driven by time, overlay states (Music/Pet) are temporary
-
 const STATES = {
   DAY: "day",
   NIGHT: "night",
@@ -76,12 +73,15 @@ export function updateBaseStateFromTime(dayStart = 6, dayEnd = 18) {
 
 export function triggerPet() {
   transitionToOverlayState(STATES.PET);
-  setTimeout(() => {
-    if (state.current === STATES.PET) exitOverlayState();
-  }, 300);
-}
 
-export function setMusicActive(isActive) {
+  // Setup callback for when pet animation completes
+  window.onPetAnimationComplete = () => {
+    if (state.current === STATES.PET) {
+      exitOverlayState();
+      window.onPetAnimationComplete = null;
+    }
+  };
+} export function setMusicActive(isActive) {
   if (isActive && state.current !== STATES.MUSIC) {
     transitionToOverlayState(STATES.MUSIC);
   } else if (!isActive && state.current === STATES.MUSIC) {

@@ -16,47 +16,46 @@ import {
 } from "./audio/text-audio.js";
 import { getSetting } from "./settings.js";
 
-// Sprite sheet configuration - add new sprites here
-// Each sprite sheet should be a horizontal strip of frames (128px height)
+// Sprite sheet configuration
 // speed: animation speed (0.05 = very slow, 0.3 = fast)
 // loop: true (continuous) or false (play once and hold last frame)
 // scale: sprite size multiplier (0.5 = half, 1.0 = original, 2.0 = double)
 const SPRITE_CONFIG = {
   day: {
     path: "./assets/animations/sprite_day.png",
-    frames: 10,
-    frameWidth: 128,
-    frameHeight: 128,
-    speed: 0.08,
+    frames: 25,
+    frameWidth: 110,
+    frameHeight: 120,
+    speed: 0.15,
     loop: true,
-    scale: 2.5,
+    scale: 2.2,
   },
   night: {
     path: "./assets/animations/sprite_night.png",
-    frames: 3,
-    frameWidth: 128,
-    frameHeight: 128,
-    speed: 0.08,
+    frames: 15,
+    frameWidth: 126,
+    frameHeight: 120,
+    speed: 0.15,
     loop: true,
-    scale: 2.5,
+    scale: 2.2,
   },
   music: {
     path: "./assets/animations/sprite_music.png",
-    frames: 10,
-    frameWidth: 128,
-    frameHeight: 128,
-    speed: 0.18,
+    frames: 22,
+    frameWidth: 181,
+    frameHeight: 125,
+    speed: 0.15,
     loop: true,
-    scale: 2.5,
+    scale: 2.2,
   },
   pet: {
     path: "./assets/animations/sprite_pet.png",
-    frames: 6,
-    frameWidth: 128,
-    frameHeight: 128,
-    speed: 0.12,
+    frames: 45,
+    frameWidth: 110,
+    frameHeight: 120,
+    speed: 0.2,
     loop: false,
-    scale: 2.5,
+    scale: 2.2,
   },
 };
 
@@ -218,6 +217,17 @@ function createSprites(app, centerX, centerY) {
     console.log(
       `[Renderer] Created sprite '${state}': ${config.frames} frames, speed=${config.speed}, loop=${config.loop}`,
     );
+  }
+
+  // Setup pet animation completion callback
+  if (sprites.pet) {
+    sprites.pet.onComplete = () => {
+      console.log('[Renderer] Pet animation completed');
+      // Notify state machine that pet animation is done
+      if (window.onPetAnimationComplete) {
+        window.onPetAnimationComplete();
+      }
+    };
   }
 
   return sprites;
@@ -396,6 +406,7 @@ async function initPixi() {
     app.stage.addChild(speechBox);
 
     // Expose globally for testing and external use
+    window.sprites = sprites;
     window.speechBox = speechBox;
     window.startTypewriter = startTypewriter;
     window.getRandomSpeech = getRandomSpeech;
@@ -417,6 +428,10 @@ async function initPixi() {
 
       // Trigger speech for certain state changes
       if (newState === "pet") {
+        // Reset pet animation to start
+        if (sprites.pet) {
+          sprites.pet.gotoAndPlay(0);
+        }
         startTypewriter(speechBox, getRandomSpeech("pet"));
       } else if (newState === "music") {
         startTypewriter(speechBox, getRandomSpeech("music"));

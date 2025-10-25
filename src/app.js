@@ -7,10 +7,11 @@ import {
   formatTime,
 } from "./utils.js";
 import {
-  setMusicActive,
-  triggerPet,
-  initializeState,
   updateBaseStateFromTime,
+  initializeState,
+  triggerPet,
+  setMusicActive,
+  getCurrentState,
 } from "./state-machine.js";
 import {
   playTextBeep,
@@ -491,6 +492,11 @@ function hasInteractiveAncestor(element, container) {
 }
 
 function switchMode() {
+  // Prevent mode switching during pet animation
+  if (getCurrentState() === 'pet') {
+    return;
+  }
+
   const currentModeName = MODES[activeModeIndex];
 
   if (currentModeName === MODE.FOCUS) stopFocusTimer();
