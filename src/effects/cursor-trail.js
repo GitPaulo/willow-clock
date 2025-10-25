@@ -1,6 +1,5 @@
-// Pure JavaScript cursor trail with paw prints
+// Note: Pure JavaScript cursor trail with paw prints
 // Converted from p5.js example to native DOM implementation
-
 class CursorTrail {
   constructor() {
     this.paws = [];
@@ -179,5 +178,4 @@ class Paw {
   }
 }
 
-// Export for use
 export { CursorTrail };

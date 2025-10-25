@@ -57,15 +57,14 @@ export default [
     // Renderer process (Browser environment)
     files: [
       "src/app.js",
-      "src/renderer.js",
       "src/settings.js",
-      "src/utils.js",
-      "src/state-machine.js",
+      "src/browser.js",
       "src/audio/system-audio.js",
       "src/audio/text-audio.js",
       "src/effects/**/*.js",
-      "src/window-controls.js",
       "src/weather/**/*.js",
+      "src/render/**/*.js",
+      "src/util/**/*.js",
     ],
     languageOptions: {
       ecmaVersion: 2022,
@@ -88,6 +87,7 @@ export default [
         cancelAnimationFrame: "readonly",
         performance: "readonly",
         confirm: "readonly",
+        Audio: "readonly",
         // Electron renderer globals (exposed via contextBridge)
         audioAPI: "readonly",
         windowControls: "readonly",

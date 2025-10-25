@@ -12,7 +12,7 @@ npm run dev
 
 ### Platform-Specific Builds
 
-Check `package.json`, but, 
+Check `package.json`, but,
 
 ```bash
 # Linux AppImage

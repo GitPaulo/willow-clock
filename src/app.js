@@ -5,18 +5,13 @@ import {
   getElements,
   toggleHoverStates,
   formatTime,
-} from "./utils.js";
+} from "./util/utils.js";
 import {
-  updateBaseStateFromTime,
+  updateDayNightState,
   initializeState,
   triggerPet,
   setMusicActive,
-  getCurrentState,
-} from "./state-machine.js";
-import {
-  playTextBeep,
-  initTextSound,
-} from "./audio/text-audio.js";
+} from "./render/state-machine.js";
 import { getCurrentWeather } from "./weather/weather.js";
 import {
   loadSettings,
@@ -25,7 +20,11 @@ import {
   getSetting,
   resetSettings,
 } from "./settings.js";
+import { setupTestFunctions } from "./util/test-functions.js";
 
+// -------------------------------------------------------------------------------------
+// App State
+// -------------------------------------------------------------------------------------
 let activeModeIndex = 0;
 let stopwatchIntervalId = null;
 let stopwatchElapsedTime = 0;
@@ -41,23 +40,28 @@ let weatherData = null;
 let lastWeatherUpdate = 0;
 let previousWeatherCondition = null;
 
+// -------------------------------------------------------------------------------------
+// Bootstrap
+// -------------------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", async () => {
-  // Load settings first
   await loadSettings();
 
   setupLoadingScreen();
+  setupBackgroundMusic();
+  setupCursorTrail();
+  setupAudioDetection();
   setupModeSystem();
   setupStopwatch();
   setupTimer();
   setupFocus();
-  setupCursorTrail();
-  setupBackgroundMusic();
   setupSettings();
-  setupAudioDetection();
   setupTestFunctions();
   applyDebugMode();
 });
 
+// -------------------------------------------------------------------------------------
+// Initialization & Utilities
+// -------------------------------------------------------------------------------------
 function applyDebugMode() {
   const debugMode = getSetting("debugMode", false);
   const infoElement = document.getElementById("info");
@@ -66,6 +70,9 @@ function applyDebugMode() {
   }
 }
 
+// -------------------------------------------------------------------------------------
+// Loading Screen
+// -------------------------------------------------------------------------------------
 function setupLoadingScreen() {
   const loadingScreenElement = document.getElementById("loading-screen");
   const loadingTextElement = document.querySelector(".loading-text");
@@ -117,243 +124,9 @@ function setupLoadingScreen() {
   }, DISPLAY_DURATION);
 }
 
-async function startBackgroundMusic() {
-  if (!backgroundMusic) return;
-
-  // Check if audio should auto-play based on settings
-  const audioOnStart = getSetting("audioOnStart", true);
-
-  if (!audioOnStart) {
-    console.log("[App] Auto-play disabled by settings");
-    isMuted = true;
-    backgroundMusic.muted = true;
-    return;
-  }
-
-  try {
-    // Set volume before playing to prevent crackling
-    backgroundMusic.volume = 0.08;
-    await backgroundMusic.play();
-  } catch (error) {
-    console.log("[App] Auto-play blocked:", error.message);
-  }
-}
-
-function setupCursorTrail() {
-  cursorTrailInstance = new CursorTrail();
-  cursorTrailInstance.init();
-  window.cursorTrail = cursorTrailInstance;
-
-  // Apply cursor trail setting
-  const cursorTrailEnabled = getSetting("cursorTrailEnabled", true);
-  if (!cursorTrailEnabled && cursorTrailInstance) {
-    cursorTrailInstance.destroy();
-    cursorTrailInstance = null;
-  }
-}
-
-function setupSettings() {
-  const settingsToggle = document.getElementById("settings-toggle");
-  const settingsModal = document.getElementById("settings-modal");
-  const closeSettingsBtn = document.getElementById("close-settings");
-  const settingsBackdrop = document.querySelector(".settings-backdrop");
-  const saveBtn = document.getElementById("settings-save");
-  const resetBtn = document.getElementById("settings-reset");
-
-  // Get all setting inputs
-  const audioOnStartCheckbox = document.getElementById(
-    "setting-audio-on-start",
-  );
-  const timerAlarmCheckbox = document.getElementById("setting-timer-alarm");
-  const cursorTrailCheckbox = document.getElementById("setting-cursor-trail");
-  const debugModeCheckbox = document.getElementById("setting-debug-mode");
-  const modeChangeSpeechCheckbox = document.getElementById(
-    "setting-mode-change-speech",
-  );
-  const weatherFrequencyInput = document.getElementById(
-    "setting-weather-frequency",
-  );
-  const temperatureUnitSelect = document.getElementById(
-    "setting-temperature-unit",
-  );
-  const dayStartInput = document.getElementById("setting-day-start");
-  const dayEndInput = document.getElementById("setting-day-end");
-  const hardwareAccelerationCheckbox = document.getElementById(
-    "setting-hardware-acceleration",
-  );
-  const fpsTargetInput = document.getElementById("setting-fps-target");
-
-  if (!settingsToggle || !settingsModal) return;
-
-  // Function to load settings into UI
-  function loadSettingsUI() {
-    const settings = getSettings();
-
-    if (audioOnStartCheckbox)
-      audioOnStartCheckbox.checked = settings.audioOnStart;
-    if (timerAlarmCheckbox)
-      timerAlarmCheckbox.checked = settings.timerAlarmSound;
-    if (cursorTrailCheckbox)
-      cursorTrailCheckbox.checked = settings.cursorTrailEnabled;
-    if (debugModeCheckbox)
-      debugModeCheckbox.checked = settings.debugMode;
-    if (modeChangeSpeechCheckbox)
-      modeChangeSpeechCheckbox.checked = settings.modeChangeSpeech;
-    if (weatherFrequencyInput)
-      weatherFrequencyInput.value = settings.weatherUpdateFrequency / 60000; // Convert ms to minutes
-    if (temperatureUnitSelect)
-      temperatureUnitSelect.value = settings.temperatureUnit;
-    if (dayStartInput)
-      dayStartInput.value = settings.dayNightTransitionHours.start;
-    if (dayEndInput)
-      dayEndInput.value = settings.dayNightTransitionHours.end;
-    if (hardwareAccelerationCheckbox)
-      hardwareAccelerationCheckbox.checked = settings.hardwareAcceleration;
-    if (fpsTargetInput) fpsTargetInput.value = settings.fpsTarget;
-
-    console.log("[Settings] Loaded settings into UI:", settings);
-  }
-
-  // Function to save settings from UI
-  async function saveSettingsUI() {
-    const oldSettings = getSettings();
-
-    const newSettings = {
-      audioOnStart: audioOnStartCheckbox?.checked ?? true,
-      timerAlarmSound: timerAlarmCheckbox?.checked ?? true,
-      cursorTrailEnabled: cursorTrailCheckbox?.checked ?? true,
-      debugMode: debugModeCheckbox?.checked ?? false,
-      modeChangeSpeech: modeChangeSpeechCheckbox?.checked ?? true,
-      weatherUpdateFrequency:
-        (parseInt(weatherFrequencyInput?.value) || 2) * 60000, // Convert minutes to ms
-      temperatureUnit: temperatureUnitSelect?.value ?? "celsius",
-      dayNightTransitionHours: {
-        start: parseInt(dayStartInput?.value) || 6,
-        end: parseInt(dayEndInput?.value) || 18,
-      },
-      hardwareAcceleration: hardwareAccelerationCheckbox?.checked ?? true,
-      fpsTarget: parseInt(fpsTargetInput?.value) || 60,
-    };
-
-    const success = await saveSettings(newSettings);
-
-    if (success) {
-      console.log("[Settings] Settings saved successfully");
-      applySettings(newSettings);
-
-      // Check if restart-required settings changed
-      const restartRequired =
-        oldSettings.hardwareAcceleration !== newSettings.hardwareAcceleration ||
-        oldSettings.fpsTarget !== newSettings.fpsTarget;
-
-      if (restartRequired) {
-        showSettingsNotification(
-          "Settings saved! Restart the app for changes to take effect.",
-        );
-      } else {
-        showSettingsNotification("Settings saved!");
-      }
-    } else {
-      console.error("[Settings] Failed to save settings");
-      showSettingsNotification("Failed to save settings", true);
-    }
-  }
-
-  // Function to apply settings to the app
-  function applySettings(settings) {
-    // Apply cursor trail setting
-    if (settings.cursorTrailEnabled && !cursorTrailInstance) {
-      cursorTrailInstance = new CursorTrail();
-      cursorTrailInstance.init();
-      window.cursorTrail = cursorTrailInstance;
-    } else if (!settings.cursorTrailEnabled && cursorTrailInstance) {
-      cursorTrailInstance.destroy();
-      cursorTrailInstance = null;
-    }
-
-    // Apply debug mode setting
-    applyDebugMode();
-
-    // Update day/night state with new transition times
-    const { start, end } = settings.dayNightTransitionHours;
-    updateBaseStateFromTime(start, end);
-
-    // Weather display will update on next cycle
-    // Timer alarm and audio settings apply on next use
-    // Hardware acceleration and FPS target require restart
-
-    console.log("[Settings] Applied settings:", settings);
-  }
-
-  // Function to show notification
-  function showSettingsNotification(message, isError = false) {
-    // Simple console notification for now
-    if (isError) {
-      console.error(`[Settings] ${message}`);
-    } else {
-      console.log(`[Settings] ${message}`);
-    }
-
-    // Optional: Could add a visual toast notification here
-    // For now, user sees the message in console
-  }
-
-  // Open settings modal
-  settingsToggle.addEventListener("click", (e) => {
-    e.stopPropagation();
-    console.log("[Settings] Opening settings modal");
-    loadSettingsUI(); // Load current settings
-    settingsModal.classList.remove("hidden");
-  });
-
-  // Close settings modal via close button
-  if (closeSettingsBtn) {
-    closeSettingsBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      console.log("[Settings] Closing settings modal");
-      settingsModal.classList.add("hidden");
-    });
-  }
-
-  // Close settings modal via backdrop click
-  if (settingsBackdrop) {
-    settingsBackdrop.addEventListener("click", () => {
-      console.log("[Settings] Closing settings modal (backdrop click)");
-      settingsModal.classList.add("hidden");
-    });
-  }
-
-  // Close settings modal via ESC key
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !settingsModal.classList.contains("hidden")) {
-      console.log("[Settings] Closing settings modal (ESC key)");
-      settingsModal.classList.add("hidden");
-    }
-  });
-
-  // Save button
-  if (saveBtn) {
-    saveBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      await saveSettingsUI();
-      settingsModal.classList.add("hidden");
-    });
-  }
-
-  // Reset button
-  if (resetBtn) {
-    resetBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      if (confirm("Are you sure you want to reset all settings to defaults?")) {
-        await resetSettings();
-        loadSettingsUI(); // Reload UI with defaults
-        applySettings(getSettings());
-        showSettingsNotification("Settings reset to defaults");
-      }
-    });
-  }
-}
-
+// -------------------------------------------------------------------------------------
+// Audio Setup (Background Music & Timer Alarm)
+// -------------------------------------------------------------------------------------
 function setupBackgroundMusic() {
   const elements = getElements([
     "background-music",
@@ -372,7 +145,8 @@ function setupBackgroundMusic() {
   const source = document.createElement("source");
   source.src = "./assets/audio/timer-end.mp3";
   source.type = "audio/mpeg";
-  timerAlarmAudio.appendChild(source); if (!backgroundMusic || !audioToggle || !volumeIcon) return;
+  timerAlarmAudio.appendChild(source);
+  if (!backgroundMusic || !audioToggle || !volumeIcon) return;
 
   // Set audio properties to prevent crackling
   backgroundMusic.volume = 0.08;
@@ -409,6 +183,72 @@ function setupBackgroundMusic() {
   });
 }
 
+async function startBackgroundMusic() {
+  if (!backgroundMusic) return;
+
+  // Check if audio should auto-play based on settings
+  const audioOnStart = getSetting("audioOnStart", true);
+
+  if (!audioOnStart) {
+    console.log("[App] Auto-play disabled by settings");
+    isMuted = true;
+    backgroundMusic.muted = true;
+    return;
+  }
+
+  try {
+    // Set volume before playing to prevent crackling
+    backgroundMusic.volume = 0.08;
+    await backgroundMusic.play();
+  } catch (error) {
+    console.log("[App] Auto-play blocked:", error.message);
+  }
+}
+
+function setupAudioDetection() {
+  console.log("[App] Setting up audio detection...");
+
+  // Check if audioAPI is available (in Electron environment)
+  if (typeof window.audioAPI !== "undefined") {
+    // Start audio detection in main process
+    window.audioAPI
+      .startAudio()
+      .then(() => {
+        console.log("[App] Audio detection started");
+      })
+      .catch((error) => {
+        console.warn("[App] Failed to start audio detection:", error);
+      });
+
+    // Listen for music status changes from main process
+    window.audioAPI.onMusicStatusChanged((isPlaying) => {
+      console.log("[App] Music status changed:", isPlaying);
+      setMusicActive(isPlaying);
+    });
+  } else {
+    console.warn("[App] audioAPI not available - running in browser mode");
+  }
+}
+
+// -------------------------------------------------------------------------------------
+// Visual Effects
+// -------------------------------------------------------------------------------------
+function setupCursorTrail() {
+  cursorTrailInstance = new CursorTrail();
+  cursorTrailInstance.init();
+  window.cursorTrail = cursorTrailInstance;
+
+  // Apply cursor trail setting
+  const cursorTrailEnabled = getSetting("cursorTrailEnabled", true);
+  if (!cursorTrailEnabled && cursorTrailInstance) {
+    cursorTrailInstance.destroy();
+    cursorTrailInstance = null;
+  }
+}
+
+// -------------------------------------------------------------------------------------
+// Mode System (Clock, Stopwatch, Timer, Focus)
+// -------------------------------------------------------------------------------------
 function setupModeSystem() {
   const elementIds = [
     "mode",
@@ -492,11 +332,6 @@ function hasInteractiveAncestor(element, container) {
 }
 
 function switchMode() {
-  // Prevent mode switching during pet animation
-  if (getCurrentState() === 'pet') {
-    return;
-  }
-
   const currentModeName = MODES[activeModeIndex];
 
   if (currentModeName === MODE.FOCUS) stopFocusTimer();
@@ -515,6 +350,10 @@ function switchMode() {
     triggerModeSpeech(nextModeName);
   }
 }
+
+// -------------------------------------------------------------------------------------
+// Stopwatch
+// -------------------------------------------------------------------------------------
 function setupStopwatch() {
   const stopwatchElements = getElements([
     "stopwatch-start",
@@ -534,7 +373,11 @@ function setupStopwatch() {
     const seconds = Math.floor(stopwatchElapsedTime / 1000) % 60;
     const minutes = Math.floor(stopwatchElapsedTime / 60000) % 60;
     const hours = Math.floor(stopwatchElapsedTime / 3600000);
-    const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
+    const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
     timeDisplayElement.textContent = formattedTime;
   };
 
@@ -576,6 +419,9 @@ function setupStopwatch() {
   }
 }
 
+// -------------------------------------------------------------------------------------
+// Timer
+// -------------------------------------------------------------------------------------
 function setupTimer() {
   const timerElements = getElements([
     "timer-input",
@@ -610,7 +456,9 @@ function setupTimer() {
     isTimerLocked = !isTimerLocked;
     timerInputElement.readOnly = isTimerLocked;
     lockToggleButton.textContent = isTimerLocked ? "Unlock" : "Lock";
-    lockToggleButton.title = `Click to ${isTimerLocked ? "unlock" : "lock"} timer ${isTimerLocked ? "for editing" : ""}`;
+    lockToggleButton.title = `Click to ${isTimerLocked ? "unlock" : "lock"} timer ${
+      isTimerLocked ? "for editing" : ""
+    }`;
 
     startButton.disabled = !isTimerLocked;
     stopButton.disabled = !isTimerLocked;
@@ -649,7 +497,9 @@ function setupTimer() {
         // Play alarm sound if enabled
         if (getSetting("timerAlarmSound", true) && timerAlarmAudio) {
           timerAlarmAudio.currentTime = 0;
-          timerAlarmAudio.play().catch(err => console.log("[Timer] Alarm play failed:", err));
+          timerAlarmAudio
+            .play()
+            .catch((err) => console.log("[Timer] Alarm play failed:", err));
         }
       }
       updateTimerDisplay();
@@ -664,6 +514,9 @@ function setupTimer() {
   });
 }
 
+// -------------------------------------------------------------------------------------
+// Focus
+// -------------------------------------------------------------------------------------
 function setupFocus() {
   // Focus mode is auto-controlled by switchMode - no buttons needed
 }
@@ -693,89 +546,178 @@ function updateFocusDisplay() {
   }
 }
 
-function setupAudioDetection() {
-  console.log("[App] Setting up audio detection...");
+// -------------------------------------------------------------------------------------
+// Settings Modal
+// -------------------------------------------------------------------------------------
+function setupSettings() {
+  const elements = getElements([
+    "settings-toggle",
+    "settings-modal",
+    "close-settings",
+    "settings-save",
+    "settings-reset",
+    "setting-audio-on-start",
+    "setting-timer-alarm",
+    "setting-cursor-trail",
+    "setting-debug-mode",
+    "setting-mode-change-speech",
+    "setting-weather-frequency",
+    "setting-temperature-unit",
+    "setting-day-start",
+    "setting-day-end",
+    "setting-hardware-acceleration",
+    "setting-fps-target",
+  ]);
 
-  // Check if audioAPI is available (in Electron environment)
-  if (typeof window.audioAPI !== "undefined") {
-    // Start audio detection in main process
-    window.audioAPI
-      .startAudio()
-      .then(() => {
-        console.log("[App] Audio detection started");
-      })
-      .catch((error) => {
-        console.warn("[App] Failed to start audio detection:", error);
-      });
+  const {
+    "settings-toggle": toggleBtn,
+    "settings-modal": modal,
+    "close-settings": closeBtn,
+    "settings-save": saveBtn,
+    "settings-reset": resetBtn,
+  } = elements;
 
-    // Listen for music status changes from main process
-    window.audioAPI.onMusicStatusChanged((isPlaying) => {
-      console.log("[App] Music status changed:", isPlaying);
-      setMusicActive(isPlaying);
-    });
-  } else {
-    console.warn("[App] audioAPI not available - running in browser mode");
+  if (!toggleBtn || !modal) return;
+
+  const backdrop = document.querySelector(".settings-backdrop");
+
+  // Load settings into UI
+  function loadSettingsUI() {
+    const settings = getSettings();
+    if (elements["setting-audio-on-start"])
+      elements["setting-audio-on-start"].checked = settings.audioOnStart;
+    if (elements["setting-timer-alarm"])
+      elements["setting-timer-alarm"].checked = settings.timerAlarmSound;
+    if (elements["setting-cursor-trail"])
+      elements["setting-cursor-trail"].checked = settings.cursorTrailEnabled;
+    if (elements["setting-debug-mode"])
+      elements["setting-debug-mode"].checked = settings.debugMode;
+    if (elements["setting-mode-change-speech"])
+      elements["setting-mode-change-speech"].checked =
+        settings.modeChangeSpeech;
+    if (elements["setting-weather-frequency"])
+      elements["setting-weather-frequency"].value =
+        settings.weatherUpdateFrequency / 60000;
+    if (elements["setting-temperature-unit"])
+      elements["setting-temperature-unit"].value = settings.temperatureUnit;
+    if (elements["setting-day-start"])
+      elements["setting-day-start"].value =
+        settings.dayNightTransitionHours.start;
+    if (elements["setting-day-end"])
+      elements["setting-day-end"].value = settings.dayNightTransitionHours.end;
+    if (elements["setting-hardware-acceleration"])
+      elements["setting-hardware-acceleration"].checked =
+        settings.hardwareAcceleration;
+    if (elements["setting-fps-target"])
+      elements["setting-fps-target"].value = settings.fpsTarget;
   }
-}
 
-function setupTestFunctions() {
-  window.testPet = () => triggerPet();
+  // Save settings from UI
+  async function saveSettingsUI() {
+    const oldSettings = getSettings();
+    const newSettings = {
+      audioOnStart: elements["setting-audio-on-start"]?.checked ?? true,
+      timerAlarmSound: elements["setting-timer-alarm"]?.checked ?? true,
+      cursorTrailEnabled: elements["setting-cursor-trail"]?.checked ?? true,
+      debugMode: elements["setting-debug-mode"]?.checked ?? false,
+      modeChangeSpeech: elements["setting-mode-change-speech"]?.checked ?? true,
+      weatherUpdateFrequency:
+        (parseInt(elements["setting-weather-frequency"]?.value) || 2) * 60000,
+      temperatureUnit: elements["setting-temperature-unit"]?.value ?? "celsius",
+      dayNightTransitionHours: {
+        start: parseInt(elements["setting-day-start"]?.value) || 6,
+        end: parseInt(elements["setting-day-end"]?.value) || 18,
+      },
+      hardwareAcceleration:
+        elements["setting-hardware-acceleration"]?.checked ?? true,
+      fpsTarget: parseInt(elements["setting-fps-target"]?.value) || 60,
+    };
 
-  window.testMusic = () => {
-    console.log(`[App] Testing music - forcing music state to true`);
-    setMusicActive(true);
-  };
-
-  window.testSpeech = (text) => {
-    if (window.speechBox && window.startTypewriter) {
-      window.startTypewriter(
-        window.speechBox,
-        text || "Hello! This is a test message with typewriter animation.",
-      );
-    }
-  };
-
-  window.testSpeechCategory = (category) => {
-    if (window.speechBox && window.startTypewriter && window.getRandomSpeech) {
-      const message =
-        window.getRandomSpeech(category) ||
-        `No messages for category: ${category}`;
-      window.startTypewriter(window.speechBox, message);
-    }
-  };
-
-  window.testTextBeep = () => {
-    initTextSound(); // Ensure audio is initialized
-    playTextBeep();
-  };
-
-  window.testAudioStatus = async () => {
-    const { getAudioState } = await import("./audio/text-audio.js");
-    console.log("[App] TextAudio Status:", getAudioState());
-    return getAudioState();
-  };
-
-  window.testWeatherChange = (condition) => {
-    console.log(`[App] Testing weather change to: ${condition}`);
-    if (condition) {
-      triggerWeatherSpeech(condition);
-    } else {
+    const success = await saveSettings(newSettings);
+    if (success) {
+      applySettings(newSettings);
+      const restartRequired =
+        oldSettings.hardwareAcceleration !== newSettings.hardwareAcceleration ||
+        oldSettings.fpsTarget !== newSettings.fpsTarget;
       console.log(
-        "[App] Available weather conditions:",
-        "Clear, MostlyClear, PartlyCloudy, Overcast, Fog, Rain, Snow, Thunderstorm, etc.",
+        restartRequired
+          ? "[Settings] Saved! Restart app for hardware/FPS changes."
+          : "[Settings] Saved successfully!",
       );
+    } else {
+      console.error("[Settings] Failed to save");
     }
-  };
+  }
 
-  console.log(
-    "[App] Test functions available: testPet(), testMusic(), testSpeech('message'), testTextBeep(), testAudioStatus(), testWeatherChange('condition')",
-  );
+  // Apply settings to running app
+  function applySettings(settings) {
+    // Cursor trail
+    if (settings.cursorTrailEnabled && !cursorTrailInstance) {
+      cursorTrailInstance = new CursorTrail();
+      cursorTrailInstance.init();
+      window.cursorTrail = cursorTrailInstance;
+    } else if (!settings.cursorTrailEnabled && cursorTrailInstance) {
+      cursorTrailInstance.destroy();
+      cursorTrailInstance = null;
+    }
+    // Debug mode
+    applyDebugMode();
+    // Day/night transition
+    const { start, end } = settings.dayNightTransitionHours;
+    updateDayNightState(start, end);
+  }
+
+  // Event handlers
+  toggleBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    loadSettingsUI();
+    modal.classList.remove("hidden");
+  });
+
+  closeBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    modal.classList.add("hidden");
+  });
+
+  backdrop?.addEventListener("click", () => modal.classList.add("hidden"));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+      modal.classList.add("hidden");
+    }
+  });
+
+  saveBtn?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    await saveSettingsUI();
+    modal.classList.add("hidden");
+  });
+
+  resetBtn?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (confirm("Reset all settings to defaults?")) {
+      await resetSettings();
+      loadSettingsUI();
+      applySettings(getSettings());
+      console.log("[Settings] Reset to defaults");
+    }
+  });
 }
 
+// -------------------------------------------------------------------------------------
+// Clock & Weather
+// -------------------------------------------------------------------------------------
 function updateClock() {
+  const clockEl = document.getElementById("clock");
+  const dateEl = document.getElementById("date");
+  if (!clockEl || !dateEl) return;
+
   const now = new Date();
-  const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
-  document.getElementById("clock").textContent = time;
+  const time = `${now.getHours().toString().padStart(2, "0")}:${now
+    .getMinutes()
+    .toString()
+    .padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+  clockEl.textContent = time;
 
   const date = now.toLocaleDateString("en-US", {
     weekday: "long",
@@ -783,7 +725,7 @@ function updateClock() {
     month: "long",
     day: "numeric",
   });
-  document.getElementById("date").textContent = date;
+  dateEl.textContent = date;
 
   // Update weather based on settings frequency
   const currentTime = Date.now();
@@ -827,6 +769,34 @@ async function updateWeather() {
   }
 }
 
+function updateWeatherDisplay() {
+  const weatherElement = document.getElementById("weather");
+  if (!weatherElement) return;
+
+  if (!weatherData) {
+    weatherElement.textContent = "Loading weather...";
+    return;
+  }
+
+  const { temperature, condition } = weatherData;
+  const unit = getSetting("temperatureUnit", "celsius");
+
+  let tempText = "Weather unavailable";
+  if (temperature !== null) {
+    const displayTemp =
+      unit === "fahrenheit"
+        ? Math.round((temperature * 9) / 5 + 32)
+        : Math.round(temperature);
+    const unitSymbol = unit === "fahrenheit" ? "°F" : "°C";
+    tempText = `${displayTemp}${unitSymbol}`;
+  }
+
+  weatherElement.textContent = `${tempText}, ${condition}`;
+}
+
+// -------------------------------------------------------------------------------------
+// Speech triggers
+// -------------------------------------------------------------------------------------
 function triggerWeatherSpeech(condition) {
   if (!window.SPEECH_MESSAGES || !window.startTypewriter || !window.speechBox) {
     console.log("[Weather] Speech system not available yet");
@@ -836,14 +806,18 @@ function triggerWeatherSpeech(condition) {
   try {
     const weatherMessages = window.SPEECH_MESSAGES?.weather;
 
-    if (!weatherMessages || typeof weatherMessages !== 'object') {
+    if (!weatherMessages || typeof weatherMessages !== "object") {
       console.log("[Weather] No weather messages available");
       return;
     }
 
     const conditionMessages = weatherMessages[condition];
 
-    if (!conditionMessages || !Array.isArray(conditionMessages) || conditionMessages.length === 0) {
+    if (
+      !conditionMessages ||
+      !Array.isArray(conditionMessages) ||
+      conditionMessages.length === 0
+    ) {
       console.log(
         `[Weather] No speech messages found for condition: ${condition}`,
       );
@@ -870,7 +844,7 @@ function triggerModeSpeech(modeName) {
   try {
     const modeMessages = window.SPEECH_MESSAGES?.modes;
 
-    if (!modeMessages || typeof modeMessages !== 'object') {
+    if (!modeMessages || typeof modeMessages !== "object") {
       console.log("[Mode] No mode messages available");
       return;
     }
@@ -891,38 +865,27 @@ function triggerModeSpeech(modeName) {
   } catch (error) {
     console.error("[Mode] Failed to trigger speech:", error);
   }
-} function updateWeatherDisplay() {
-  const weatherElement = document.getElementById("weather");
-  if (!weatherElement || !weatherData) {
-    if (weatherElement) weatherElement.textContent = "Loading weather...";
-    return;
-  }
-
-  const { temperature, condition } = weatherData;
-  const unit = getSetting("temperatureUnit", "celsius");
-
-  let tempText = "Weather unavailable";
-  if (temperature !== null) {
-    const displayTemp = unit === "fahrenheit"
-      ? Math.round(temperature * 9 / 5 + 32)
-      : Math.round(temperature);
-    const unitSymbol = unit === "fahrenheit" ? "°F" : "°C";
-    tempText = `${displayTemp}${unitSymbol}`;
-  }
-
-  weatherElement.textContent = `${tempText}, ${condition}`;
 }
 
+// -------------------------------------------------------------------------------------
+// Exports
+// -------------------------------------------------------------------------------------
 export function handleClick() {
   triggerPet();
 }
 
 export function initializeApp() {
+  // Expose triggerWeatherSpeech globally for test functions
+  window.triggerWeatherSpeech = triggerWeatherSpeech;
+
   initializeState();
   updateClock();
   setInterval(updateClock, 1000);
   setInterval(() => {
-    const { start, end } = getSetting("dayNightTransitionHours", { start: 6, end: 18 });
-    updateBaseStateFromTime(start, end);
+    const { start, end } = getSetting("dayNightTransitionHours", {
+      start: 6,
+      end: 18,
+    });
+    updateDayNightState(start, end);
   }, 60000);
 }

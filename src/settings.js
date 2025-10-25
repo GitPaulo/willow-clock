@@ -25,7 +25,6 @@ const DEFAULT_SETTINGS = {
 let currentSettings = { ...DEFAULT_SETTINGS };
 let isElectron = false;
 
-// Check if running in Electron environment
 function checkElectronEnvironment() {
   isElectron =
     typeof window !== "undefined" &&

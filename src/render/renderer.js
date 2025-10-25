@@ -7,14 +7,11 @@ import {
   Text,
   Graphics,
   Container,
-} from "../public/pixi.js";
-import { initializeApp, handleClick } from "./app.js";
+} from "../../public/pixi.js";
+import { initializeApp, handleClick } from "../app.js";
 import { onStateChange, getCurrentState } from "./state-machine.js";
-import {
-  playTextBeepSoft,
-  initTextSound,
-} from "./audio/text-audio.js";
-import { getSetting } from "./settings.js";
+import { playTextBeepSoft, initTextSound } from "../audio/text-audio.js";
+import { getSetting } from "../settings.js";
 
 // Sprite sheet configuration
 // speed: animation speed (0.05 = very slow, 0.3 = fast)
@@ -46,7 +43,7 @@ const SPRITE_CONFIG = {
     frameHeight: 125,
     speed: 0.15,
     loop: true,
-    scale: 2.2,
+    scale: 1.8,
   },
   pet: {
     path: "./assets/animations/sprite_pet.png",
@@ -137,7 +134,10 @@ function parseSimpleYAML(yamlText) {
       } else if (lineIndent > indent && currentCategory) {
         // Subcategory (nested under current category)
         currentSubCategory = key;
-        if (!messages[currentCategory] || Array.isArray(messages[currentCategory])) {
+        if (
+          !messages[currentCategory] ||
+          Array.isArray(messages[currentCategory])
+        ) {
           messages[currentCategory] = {};
         }
         messages[currentCategory][currentSubCategory] = [];
@@ -217,17 +217,6 @@ function createSprites(app, centerX, centerY) {
     console.log(
       `[Renderer] Created sprite '${state}': ${config.frames} frames, speed=${config.speed}, loop=${config.loop}`,
     );
-  }
-
-  // Setup pet animation completion callback
-  if (sprites.pet) {
-    sprites.pet.onComplete = () => {
-      console.log('[Renderer] Pet animation completed');
-      // Notify state machine that pet animation is done
-      if (window.onPetAnimationComplete) {
-        window.onPetAnimationComplete();
-      }
-    };
   }
 
   return sprites;
@@ -423,15 +412,17 @@ async function initPixi() {
 
     onStateChange((newState) => {
       console.log(`[Renderer] State changed to: ${newState}`);
+
+      // Reset animation for the new state
+      if (sprites[newState]) {
+        sprites[newState].gotoAndPlay(0);
+      }
+
       switchToSprite(sprites, newState);
       updateStateInfo(newState);
 
       // Trigger speech for certain state changes
       if (newState === "pet") {
-        // Reset pet animation to start
-        if (sprites.pet) {
-          sprites.pet.gotoAndPlay(0);
-        }
         startTypewriter(speechBox, getRandomSpeech("pet"));
       } else if (newState === "music") {
         startTypewriter(speechBox, getRandomSpeech("music"));
@@ -442,6 +433,17 @@ async function initPixi() {
     let lastTime = performance.now();
     let frameCount = 0;
     app.ticker.add(() => {
+      // Check if pet animation has finished
+      if (getCurrentState() === "pet" && sprites.pet) {
+        const lastFrame = sprites.pet.totalFrames - 1;
+        if (sprites.pet.currentFrame >= lastFrame && !sprites.pet.playing) {
+          // Pet animation finished, exit overlay state
+          if (window.exitPetState) {
+            window.exitPetState();
+          }
+        }
+      }
+
       frameCount++;
       const now = performance.now();
       if (now >= lastTime + 1000) {
