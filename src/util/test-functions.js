@@ -58,7 +58,23 @@ export function setupTestFunctions() {
     }
   };
 
+  window.testAudioDetection = async () => {
+    console.log("[Test] Testing audio detection system...");
+    console.log("[Test] AudioAPI available:", typeof window.audioAPI !== "undefined");
+    if (typeof window.audioAPI !== "undefined") {
+      try {
+        await window.audioAPI.startAudio();
+        console.log("[Test] Audio detection started successfully");
+        console.log("[Test] Listening for music status changes (play some music to test)...");
+      } catch (error) {
+        console.error("[Test] Failed to start audio detection:", error);
+      }
+    } else {
+      console.warn("[Test] audioAPI not available - running in browser mode");
+    }
+  };
+
   console.log(
-    "[App] Test functions available: testPet(), testMusic(), testSpeech('message'), testTextBeep(), testAudioStatus(), testWeatherChange('condition')",
+    "[App] Test functions available: testPet(), testMusic(), testSpeech('message'), testTextBeep(), testAudioStatus(), testWeatherChange('condition'), testAudioDetection()",
   );
 }

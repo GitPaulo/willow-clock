@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld("audioAPI", {
   toggleAudio: () => ipcRenderer.invoke("toggle-audio-detection"),
   stopAudio: () => ipcRenderer.invoke("stop-audio-detection"),
   onMusicStatusChanged: (callback) => {
+    // Remove any existing listeners to prevent duplicates
+    ipcRenderer.removeAllListeners("music-status-changed");
     ipcRenderer.on("music-status-changed", (event, isPlaying) => {
       callback(isPlaying);
     });
