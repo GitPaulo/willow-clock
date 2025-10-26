@@ -12,138 +12,122 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function getSettingsPath() {
-  const userHome =
-    process.env.HOME || process.env.USERPROFILE || process.env.HOMEPATH;
-  return path.join(userHome, ".willow-clock", "settings.json");
+  const home = process.env.HOME || process.env.USERPROFILE || process.env.HOMEPATH;
+  return path.join(home, ".willow-clock", "settings.json");
 }
 
 async function applyHardwareAccelerationSetting() {
   try {
-    const settingsPath = getSettingsPath();
-    const data = await fs.readFile(settingsPath, "utf-8");
-    const settings = JSON.parse(data);
+    const data = await fs.readFile(getSettingsPath(), "utf-8");
+    const { hardwareAcceleration } = JSON.parse(data);
 
-    if (settings.hardwareAcceleration === false) {
+    if (hardwareAcceleration === false) {
       app.disableHardwareAcceleration();
       console.log("[Main] Hardware acceleration disabled");
-    } else {
-      console.log("[Main] Hardware acceleration enabled");
+      return;
     }
+    console.log("[Main] Hardware acceleration enabled");
   } catch {
-    // File doesn't exist or error - use default (enabled)
-    console.log("[Main] Using default hardware acceleration (enabled)");
+    console.log("[Main] Default hardware acceleration (enabled)");
   }
 }
 
 function createWindow() {
-  const isWindows = process.platform === "win32";
-  const isMacOS = process.platform === "darwin";
-  const isLinux = process.platform === "linux";
+  const platform = process.platform;
 
-  /** @type {Electron.BrowserWindowConstructorOptions} */
-  const windowConfig = {
+  const config = {
     width: 470,
     height: 512,
-    frame: false, // fully custom window
+    frame: false,
     resizable: true,
-    show: false, // show only when ready
-    icon: path.join(__dirname, "public/assets/icons/app-icon.png"), // app icon
-    backgroundColor: "#00000000", // transparent background (for CSS radius)
-    transparent: true, // allow rounded corners to be visible
+    show: false,
+    icon: path.join(__dirname, "public/assets/icons/app-icon.png"),
+    backgroundColor: "#00000000",
+    transparent: true,
     webPreferences: {
       preload: path.join(__dirname, "src/preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
-      // Audio optimizations
       experimentalFeatures: true,
       enableBlinkFeatures: "AudioWorklet",
     },
   };
 
-  if (isMacOS) {
-    windowConfig.titleBarStyle = "hiddenInset";
-    windowConfig.roundedCorners = true;
-    windowConfig.vibrancy = "under-window";
-  } else if (isWindows) {
-    windowConfig.roundedCorners = true;
-    // keep transparency for custom border-radius
-  } else if (isLinux) {
-    windowConfig.titleBarStyle = "hidden";
-    // transparency works but no native shadow on most WMs
+  if (platform === "darwin") {
+    Object.assign(config, {
+      titleBarStyle: "hiddenInset",
+      roundedCorners: true,
+      vibrancy: "under-window",
+    });
+  } else if (platform === "win32") {
+    config.roundedCorners = true;
+  } else if (platform === "linux") {
+    config.titleBarStyle = "hidden";
   }
 
-  const mainWindow = new BrowserWindow(windowConfig);
+  const win = new BrowserWindow(config);
+  win.loadFile("public/index.html");
 
-  mainWindow.loadFile("public/index.html");
-
-  mainWindow.once("ready-to-show", () => {
-    mainWindow.show();
-    if (isMacOS) mainWindow.focus();
+  win.once("ready-to-show", () => {
+    win.show();
+    if (platform === "darwin") win.focus();
   });
 
-  // Open DevTools only in dev env
-  if (!app.isPackaged) mainWindow.webContents.openDevTools({ mode: "detach" });
+  if (!app.isPackaged) win.webContents.openDevTools({ mode: "detach" });
 
-  // IPC Handlers
+  registerIPC(win);
+
+  return win;
+}
+
+function registerIPC(mainWindow) {
   ipcMain.handle("start-audio-detection", () => initSystemAudio(mainWindow));
   ipcMain.handle("toggle-audio-detection", () => toggleSystemAudio());
   ipcMain.handle("stop-audio-detection", () => stopSystemAudio());
 
-  // Settings IPC handlers
   ipcMain.handle("settings:load", async () => {
     try {
-      const settingsPath = getSettingsPath();
-      const data = await fs.readFile(settingsPath, "utf-8");
+      const data = await fs.readFile(getSettingsPath(), "utf-8");
       return JSON.parse(data);
     } catch {
-      // File doesn't exist or is invalid, return empty object (will use defaults)
       return {};
     }
   });
 
-  ipcMain.handle("settings:save", async (event, settings) => {
+  ipcMain.handle("settings:save", async (_, settings) => {
     try {
-      const settingsPath = getSettingsPath();
-      const settingsDir = path.dirname(settingsPath);
-
-      // Ensure directory exists
-      await fs.mkdir(settingsDir, { recursive: true });
-
-      // Write settings file
-      await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2));
+      const file = getSettingsPath();
+      await fs.mkdir(path.dirname(file), { recursive: true });
+      await fs.writeFile(file, JSON.stringify(settings, null, 2));
       return true;
-    } catch (error) {
-      console.error("[Main] Failed to save settings:", error);
+    } catch (err) {
+      console.error("[Main] Failed to save settings:", err);
       return false;
     }
   });
 
-  // Window controls (from preload)
-  ipcMain.on("window:minimize", (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
+  ipcMain.on("window:minimize", (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
     win?.minimize();
   });
 
-  ipcMain.on("window:close", (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
+  ipcMain.on("window:close", (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
     win?.close();
   });
 
-  ipcMain.on("window:maximize", (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    if (!win) return;
-    win.isMaximized() ? win.unmaximize() : win.maximize();
+  ipcMain.on("window:maximize", (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
+    if (win) win.isMaximized() ? win.unmaximize() : win.maximize();
   });
-
-  return mainWindow;
 }
 
-// Apply hardware acceleration setting before app initialization
+// App lifecycle
 applyHardwareAccelerationSetting();
 
 app.whenReady().then(() => {
-  // Audio optimizations for better playback
+  // Audio and render stability
   app.commandLine.appendSwitch("--disable-background-timer-throttling");
   app.commandLine.appendSwitch("--disable-backgrounding-occluded-windows");
   app.commandLine.appendSwitch("--disable-renderer-backgrounding");

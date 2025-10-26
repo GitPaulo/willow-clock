@@ -60,12 +60,17 @@ export function setupTestFunctions() {
 
   window.testAudioDetection = async () => {
     console.log("[Test] Testing audio detection system...");
-    console.log("[Test] AudioAPI available:", typeof window.audioAPI !== "undefined");
+    console.log(
+      "[Test] AudioAPI available:",
+      typeof window.audioAPI !== "undefined",
+    );
     if (typeof window.audioAPI !== "undefined") {
       try {
         await window.audioAPI.startAudio();
         console.log("[Test] Audio detection started successfully");
-        console.log("[Test] Listening for music status changes (play some music to test)...");
+        console.log(
+          "[Test] Listening for music status changes (play some music to test)...",
+        );
       } catch (error) {
         console.error("[Test] Failed to start audio detection:", error);
       }

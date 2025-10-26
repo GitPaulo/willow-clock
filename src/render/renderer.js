@@ -8,8 +8,8 @@ import {
   Graphics,
   Container,
 } from "../../public/pixi.js";
-import { initializeApp, handleClick } from "../app.js";
 import { onStateChange, getCurrentState } from "./state-machine.js";
+import { parseYAML } from "../util/utils.js";
 import { playTextBeepSoft, initTextSound } from "../audio/text-audio.js";
 import { getSetting } from "../settings.js";
 
@@ -56,47 +56,40 @@ const SPRITE_CONFIG = {
   },
 };
 
-// Speech box configuration
+// Speech config
 const SPEECH_CONFIG = {
-  width: 320, // Wider and more rectangular
-  backgroundColor: 0x2c2a2f, // Dark grey matching titlebar
+  width: 320,
+  backgroundColor: 0x2c2a2f,
   borderColor: 0xffffff,
   borderAlpha: 0.2,
   borderWidth: 1,
-  cornerRadius: 6, // Less rounded for more rectangular look
+  cornerRadius: 6,
   padding: 12,
-  bottomMargin: 20, // Margin from bottom edge
+  bottomMargin: 20,
   textStyle: {
     fontFamily: "PencilFont, Arial",
     fontSize: 14,
     fill: 0xffffff,
     align: "left",
     wordWrap: true,
-    wordWrapWidth: 296, // width - (padding * 2)
+    wordWrapWidth: 296,
     lineHeight: 18,
   },
-  typewriterSpeed: 50, // milliseconds per character
-  soundEnabled: true, // Enable typewriter sound effects
+  typewriterSpeed: 50,
+  soundEnabled: true,
   get height() {
-    return this.textStyle.lineHeight + this.padding * 2; // Height based on line height + padding
+    return this.textStyle.lineHeight + this.padding * 2;
   },
 };
 
-// Speech messages loaded from YAML
+// Speech data
 let SPEECH_MESSAGES = {};
 
-// Load speech messages from YAML file
 async function loadSpeechMessages() {
   try {
-    const response = await fetch("./speech-messages.yml");
-    const yamlText = await response.text();
-
-    // Parse YAML - simple manual parsing for basic structure
-    SPEECH_MESSAGES = parseSimpleYAML(yamlText);
-    console.log("[Renderer] Speech messages loaded from YAML", SPEECH_MESSAGES);
-  } catch (error) {
-    console.error("[Renderer] Failed to load speech messages:", error);
-    // Fallback messages
+    const res = await fetch("./speech-messages.yml");
+    SPEECH_MESSAGES = parseYAML(await res.text());
+  } catch {
     SPEECH_MESSAGES = {
       greeting: ["Hello there!"],
       pet: ["That tickles!"],
@@ -106,140 +99,75 @@ async function loadSpeechMessages() {
   }
 }
 
-// Simple YAML parser for our basic structure
-function parseSimpleYAML(yamlText) {
-  const messages = {};
-  const lines = yamlText.split("\n");
-  let currentCategory = null;
-  let currentSubCategory = null;
-  let indent = 0;
-
-  for (const line of lines) {
-    if (!line.trim() || line.trim().startsWith("#")) continue;
-
-    // Calculate indentation (number of leading spaces)
-    const lineIndent = line.search(/\S/);
-    const trimmed = line.trim();
-
-    if (trimmed.endsWith(":") && !trimmed.startsWith("-")) {
-      // Category or subcategory line
-      const key = trimmed.slice(0, -1);
-
-      if (lineIndent === 0) {
-        // Top-level category
-        currentCategory = key;
-        currentSubCategory = null;
-        messages[currentCategory] = [];
-        indent = lineIndent;
-      } else if (lineIndent > indent && currentCategory) {
-        // Subcategory (nested under current category)
-        currentSubCategory = key;
-        if (
-          !messages[currentCategory] ||
-          Array.isArray(messages[currentCategory])
-        ) {
-          messages[currentCategory] = {};
-        }
-        messages[currentCategory][currentSubCategory] = [];
-      }
-    } else if (trimmed.startsWith('- "') && trimmed.endsWith('"')) {
-      // Message line
-      const message = trimmed.slice(3, -1); // Remove '- "' and '"'
-
-      if (currentSubCategory && messages[currentCategory]) {
-        // Add to subcategory
-        messages[currentCategory][currentSubCategory].push(message);
-      } else if (currentCategory) {
-        // Add to main category
-        if (Array.isArray(messages[currentCategory])) {
-          messages[currentCategory].push(message);
-        }
-      }
-    }
-  }
-
-  return messages;
-}
-
-initializeApp();
 loadSpeechMessages();
 
-async function loadSpriteAssets() {
-  console.log("[Renderer] Loading sprite sheets...");
-
-  const assetsToLoad = Object.entries(SPRITE_CONFIG).map(([state, config]) => ({
-    alias: state,
-    src: config.path,
-  }));
-
-  await Assets.load(assetsToLoad);
-  console.log("[Renderer] Sprite sheets loaded successfully");
+// Sprite click callback
+let onSpriteClickCallback = null;
+export function onSpriteClick(cb) {
+  onSpriteClickCallback = cb;
 }
-function createFramesFromSpriteSheet(state, config) {
-  const baseTexture = Assets.get(state);
-  const frames = [];
 
-  for (let i = 0; i < config.frames; i++) {
-    const frame = new Rectangle(
-      i * config.frameWidth,
-      0,
-      config.frameWidth,
-      config.frameHeight,
-    );
-    frames.push(new Texture({ source: baseTexture.source, frame }));
+// Asset loading
+async function loadSpriteAssets() {
+  const list = Object.entries(SPRITE_CONFIG).map(([state, cfg]) => ({
+    alias: state,
+    src: cfg.path,
+  }));
+  await Assets.load(list);
+}
+
+function makeFrames(alias, cfg) {
+  const tex = Assets.get(alias);
+  const frames = new Array(cfg.frames);
+  for (let i = 0; i < cfg.frames; i++) {
+    frames[i] = new Texture({
+      source: tex.source,
+      frame: new Rectangle(
+        i * cfg.frameWidth,
+        0,
+        cfg.frameWidth,
+        cfg.frameHeight,
+      ),
+    });
   }
-
   return frames;
 }
 
-function createAnimatedSpriteAt(state, config, x, y) {
-  const frames = createFramesFromSpriteSheet(state, config);
-  const sprite = new AnimatedSprite(frames);
-
-  sprite.anchor.set(0.5);
-  sprite.x = x;
-  sprite.y = y;
-  sprite.animationSpeed = config.speed;
-  sprite.loop = config.loop ?? true;
-  sprite.scale.set(config.scale ?? 1.0);
-  sprite.visible = false;
-  sprite.play();
-
-  return sprite;
+function makeSprite(alias, cfg, x, y) {
+  const s = new AnimatedSprite(makeFrames(alias, cfg));
+  s.anchor.set(0.5);
+  s.position.set(x, y);
+  s.animationSpeed = cfg.speed;
+  s.loop = cfg.loop ?? true;
+  s.scale.set(cfg.scale ?? 1);
+  s.visible = false;
+  s.play();
+  return s;
 }
 
-function createSprites(app, centerX, centerY) {
+function createSprites(app, x, y) {
   const sprites = {};
-
-  for (const [state, config] of Object.entries(SPRITE_CONFIG)) {
-    sprites[state] = createAnimatedSpriteAt(state, config, centerX, centerY);
-    app.stage.addChild(sprites[state]);
-    console.log(
-      `[Renderer] Created sprite '${state}': ${config.frames} frames, speed=${config.speed}, loop=${config.loop}`,
-    );
+  for (const [state, cfg] of Object.entries(SPRITE_CONFIG)) {
+    const s = makeSprite(state, cfg, x, y);
+    app.stage.addChild(s);
+    sprites[state] = s;
   }
-
   return sprites;
 }
 
-function switchToSprite(sprites, state) {
-  Object.values(sprites).forEach((s) => (s.visible = false));
+function showSprite(sprites, state) {
+  for (const s of Object.values(sprites)) s.visible = false;
   if (sprites[state]) sprites[state].visible = true;
 }
 
-function repositionSprites(sprites, centerX, centerY) {
-  Object.values(sprites).forEach((sprite) => {
-    sprite.x = centerX;
-    sprite.y = centerY;
-  });
+function repositionSprites(sprites, x, y) {
+  for (const s of Object.values(sprites)) s.position.set(x, y);
 }
 
+// Speech box
 function createSpeechBox(x, y) {
-  const container = new Container();
-
-  // Create background with rounded rectangle
-  const background = new Graphics();
-  background
+  const box = new Container();
+  const bg = new Graphics()
     .rect(0, 0, SPEECH_CONFIG.width, SPEECH_CONFIG.height)
     .fill({ color: SPEECH_CONFIG.backgroundColor })
     .stroke({
@@ -248,230 +176,171 @@ function createSpeechBox(x, y) {
       width: SPEECH_CONFIG.borderWidth,
     });
 
-  // Create text object
-  const textObj = new Text({
-    text: "",
-    style: SPEECH_CONFIG.textStyle,
-  });
-  textObj.x = SPEECH_CONFIG.padding;
-  textObj.y = SPEECH_CONFIG.padding;
+  const txt = new Text({ text: "", style: SPEECH_CONFIG.textStyle });
+  txt.position.set(SPEECH_CONFIG.padding, SPEECH_CONFIG.padding);
 
-  // Add to container
-  container.addChild(background);
-  container.addChild(textObj);
+  box.addChild(bg, txt);
+  box.position.set(x - SPEECH_CONFIG.width / 2, y);
+  box.visible = false;
 
-  // Position container
-  container.x = x - SPEECH_CONFIG.width / 2;
-  container.y = y;
-  container.visible = false;
-
-  // Add typewriter functionality
-  container.typewriterData = {
-    fullText: "",
-    currentText: "",
-    currentIndex: 0,
-    isTyping: false,
-    textObj: textObj,
+  box.typeData = {
+    full: "",
+    idx: 0,
+    obj: txt,
+    active: false,
+    interval: null,
   };
 
-  return container;
+  return box;
 }
 
 function getRandomSpeech(category) {
-  const messages = SPEECH_MESSAGES[category];
-  if (!messages || messages.length === 0) return `No messages for ${category}`;
-  return messages[Math.floor(Math.random() * messages.length)];
+  const list = SPEECH_MESSAGES[category];
+  if (!list || list.length === 0) return `No messages for ${category}`;
+  return list[(Math.random() * list.length) | 0];
 }
 
-function startTypewriter(speechBox, text) {
-  const data = speechBox.typewriterData;
+function startTypewriter(box, text) {
+  const data = box.typeData;
+  if (data.active) clearInterval(data.interval);
 
-  // Reset if already typing
-  if (data.isTyping) {
-    clearInterval(data.typewriterInterval);
-  }
+  data.full = text;
+  data.idx = 0;
+  data.obj.text = "";
+  data.active = true;
+  box.visible = true;
 
-  data.fullText = text;
-  data.currentText = "";
-  data.currentIndex = 0;
-  data.isTyping = true;
-  data.textObj.text = "";
-  speechBox.visible = true;
-
-  data.typewriterInterval = setInterval(() => {
-    if (data.currentIndex < data.fullText.length) {
-      const char = data.fullText[data.currentIndex];
-      data.currentText += char;
-      data.textObj.text = data.currentText;
-      data.currentIndex++;
-
-      // Play sound effect for visible characters (not spaces or newlines)
-      if (SPEECH_CONFIG.soundEnabled && char !== " " && char !== "\n") {
-        // Initialize audio context if needed (required by browser autoplay policy)
+  data.interval = setInterval(() => {
+    if (data.idx < data.full.length) {
+      const ch = data.full[data.idx++];
+      data.obj.text += ch;
+      if (SPEECH_CONFIG.soundEnabled && ch !== " " && ch !== "\n") {
         initTextSound();
         playTextBeepSoft();
       }
-    } else {
-      clearInterval(data.typewriterInterval);
-      data.isTyping = false;
-
-      // Auto-hide based on word count (min 2 seconds, +0.5s per word)
-      const wordCount = data.fullText.trim().split(/\s+/).length;
-      const fadeDelay = Math.max(2000, wordCount * 500); // 500ms per word, min 2s
-
-      setTimeout(() => {
-        if (!data.isTyping) {
-          speechBox.visible = false;
-        }
-      }, fadeDelay);
+      return;
     }
+
+    clearInterval(data.interval);
+    data.active = false;
+
+    const words = Math.max(2, data.full.trim().split(/\s+/).length);
+    setTimeout(() => {
+      if (!data.active) box.visible = false;
+    }, words * 500);
   }, SPEECH_CONFIG.typewriterSpeed);
 }
 
-function updateStateInfo(state) {
-  const element = document.getElementById("state-info");
-  if (element) element.innerText = state;
+// UI info update
+function updateStateInfo(s) {
+  const el = document.getElementById("state-info");
+  if (el) el.innerText = s;
 }
 
-function updateFPSInfo(fps) {
-  const element = document.getElementById("fps-info");
-  if (element) element.innerText = fps;
+function updateFPSInfo(f) {
+  const el = document.getElementById("fps-info");
+  if (el) el.innerText = f;
 }
 
+// Init
 async function initPixi() {
-  console.log("[Renderer] Initializing PIXI.js...");
-  try {
-    const container = document.getElementById("pixi-container");
-    if (!container) {
-      console.error("[Renderer] pixi-container element not found");
-      return createFallbackAnimation();
+  const container = document.getElementById("pixi-container");
+  if (!container) return createFallbackAnimation();
+
+  const rect = container.getBoundingClientRect();
+  const width = Math.max(Math.floor(rect.width) || 340, 340);
+  const height = Math.max(Math.floor(rect.height) || 220, 220);
+
+  const app = new Application();
+  await app.init({
+    width,
+    height,
+    backgroundAlpha: 0,
+    antialias: true,
+    resizeTo: container,
+  });
+
+  const fpsTarget = getSetting("fpsTarget", 60);
+  if (app.ticker) app.ticker.maxFPS = fpsTarget;
+
+  container.appendChild(app.canvas);
+  app.canvas.style.cursor = "pointer";
+
+  app.canvas.onclick = (e) => {
+    initTextSound();
+    if (onSpriteClickCallback) onSpriteClickCallback(e);
+  };
+
+  let cx = app.screen.width / 2;
+  let cy = app.screen.height / 2;
+
+  await loadSpriteAssets();
+  const sprites = createSprites(app, cx, cy);
+  showSprite(sprites, getCurrentState());
+
+  const speechBox = createSpeechBox(
+    cx,
+    app.screen.height - SPEECH_CONFIG.height - SPEECH_CONFIG.bottomMargin,
+  );
+  app.stage.addChild(speechBox);
+
+  // Globals unchanged
+  window.sprites = sprites;
+  window.speechBox = speechBox;
+  window.startTypewriter = startTypewriter;
+  window.getRandomSpeech = getRandomSpeech;
+  window.SPEECH_MESSAGES = SPEECH_MESSAGES;
+
+  app.renderer.on("resize", () => {
+    cx = app.screen.width / 2;
+    cy = app.screen.height / 2;
+    repositionSprites(sprites, cx, cy);
+    speechBox.position.set(
+      cx - SPEECH_CONFIG.width / 2,
+      app.screen.height - SPEECH_CONFIG.height - SPEECH_CONFIG.bottomMargin,
+    );
+  });
+
+  onStateChange((newState) => {
+    if (sprites[newState]) sprites[newState].gotoAndPlay(0);
+    showSprite(sprites, newState);
+    updateStateInfo(newState);
+
+    if (newState === "pet") startTypewriter(speechBox, getRandomSpeech("pet"));
+    if (newState === "music")
+      startTypewriter(speechBox, getRandomSpeech("music"));
+  });
+
+  let last = performance.now();
+  let frames = 0;
+  app.ticker.add(() => {
+    if (getCurrentState() === "pet" && sprites.pet) {
+      const lastFrame = sprites.pet.totalFrames - 1;
+      if (sprites.pet.currentFrame >= lastFrame && !sprites.pet.playing) {
+        if (window.exitPetState) window.exitPetState();
+      }
     }
 
-    const width = Math.max(
-      Math.floor(container.getBoundingClientRect().width) || 340,
-      340,
-    );
-    const height = Math.max(
-      Math.floor(container.getBoundingClientRect().height) || 220,
-      220,
-    );
-
-    const app = new Application();
-    await app.init({
-      width,
-      height,
-      backgroundAlpha: 0,
-      antialias: true,
-      resizeTo: container,
-    });
-
-    // Apply FPS target from settings
-    const fpsTarget = getSetting("fpsTarget", 60);
-    if (app.ticker) {
-      app.ticker.maxFPS = fpsTarget;
-      console.log(`[Renderer] FPS target set to: ${fpsTarget}`);
+    frames++;
+    const now = performance.now();
+    if (now >= last + 1000) {
+      updateFPSInfo(Math.round((frames * 1000) / (now - last)));
+      frames = 0;
+      last = now;
     }
+  });
 
-    container.appendChild(app.canvas);
-    container.style.background = "rgba(255, 255, 255, 0.15)";
-    app.canvas.style.cursor = "pointer";
-    app.canvas.addEventListener("click", (event) => {
-      // Initialize text audio on first click (required for browser autoplay policy)
-      initTextSound();
-      handleClick(event);
-    });
-
-    let centerX = width / 2;
-    let centerY = height / 2;
-
-    await loadSpriteAssets();
-    const sprites = createSprites(app, centerX, centerY);
-    switchToSprite(sprites, getCurrentState());
-
-    const speechBox = createSpeechBox(
-      centerX,
-      height - SPEECH_CONFIG.height - SPEECH_CONFIG.bottomMargin,
-    );
-    app.stage.addChild(speechBox);
-
-    // Expose globally for testing and external use
-    window.sprites = sprites;
-    window.speechBox = speechBox;
-    window.startTypewriter = startTypewriter;
-    window.getRandomSpeech = getRandomSpeech;
-    window.SPEECH_MESSAGES = SPEECH_MESSAGES;
-
-    app.renderer.on("resize", () => {
-      centerX = app.screen.width / 2;
-      centerY = app.screen.height / 2;
-      repositionSprites(sprites, centerX, centerY);
-      speechBox.x = centerX - SPEECH_CONFIG.width / 2;
-      speechBox.y =
-        app.screen.height - SPEECH_CONFIG.height - SPEECH_CONFIG.bottomMargin;
-    });
-
-    onStateChange((newState) => {
-      console.log(`[Renderer] State changed to: ${newState}`);
-
-      // Reset animation for the new state
-      if (sprites[newState]) {
-        sprites[newState].gotoAndPlay(0);
-      }
-
-      switchToSprite(sprites, newState);
-      updateStateInfo(newState);
-
-      // Trigger speech for certain state changes
-      if (newState === "pet") {
-        startTypewriter(speechBox, getRandomSpeech("pet"));
-      } else if (newState === "music") {
-        startTypewriter(speechBox, getRandomSpeech("music"));
-      }
-    });
-
-    // Track and display FPS
-    let lastTime = performance.now();
-    let frameCount = 0;
-    app.ticker.add(() => {
-      // Check if pet animation has finished
-      if (getCurrentState() === "pet" && sprites.pet) {
-        const lastFrame = sprites.pet.totalFrames - 1;
-        if (sprites.pet.currentFrame >= lastFrame && !sprites.pet.playing) {
-          // Pet animation finished, exit overlay state
-          if (window.exitPetState) {
-            window.exitPetState();
-          }
-        }
-      }
-
-      frameCount++;
-      const now = performance.now();
-      if (now >= lastTime + 1000) {
-        const fps = Math.round((frameCount * 1000) / (now - lastTime));
-        updateFPSInfo(fps);
-        frameCount = 0;
-        lastTime = now;
-      }
-    });
-
-    updateStateInfo(getCurrentState());
-    console.log("[Renderer] PIXI.js initialization complete");
-  } catch (error) {
-    console.error("[Renderer] ERROR: PIXI.js initialization failed:", error);
-    createFallbackAnimation();
-  }
+  updateStateInfo(getCurrentState());
 }
 
 function createFallbackAnimation() {
   document.getElementById("pixi-container").innerHTML = `
-    <div style="width: 100%; height: 100%; background: rgba(167, 167, 167, 0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px;">
-      <div style="width: 60px; height: 60px; background: gold; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); animation: spin 3s linear infinite;"></div>
-      <p style="color: white; margin-top: 20px;">Willow fallback</p>
+    <div style="width:100%;height:100%;background:rgba(167,167,167,0.3);display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;">
+      <div style="width:60px;height:60px;background:gold;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);animation:spin 3s linear infinite;"></div>
+      <p style="color:white;margin-top:20px;">Willow fallback</p>
     </div>
     <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
   `;
 }
 
-document.readyState === "loading"
-  ? document.addEventListener("DOMContentLoaded", initPixi)
-  : initPixi();
+export { initPixi as initRenderer };

@@ -21,6 +21,7 @@ import {
   resetSettings,
 } from "./settings.js";
 import { setupTestFunctions } from "./util/test-functions.js";
+import { initRenderer, onSpriteClick } from "./render/renderer.js";
 
 // -------------------------------------------------------------------------------------
 // App State
@@ -47,6 +48,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadSettings();
 
   setupLoadingScreen();
+  await initRenderer();
+  onSpriteClick(triggerPet);
+  initializeApp();
   setupBackgroundMusic();
   setupCursorTrail();
   setupAudioDetection();
@@ -58,17 +62,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupTestFunctions();
   applyDebugMode();
 });
-
-// -------------------------------------------------------------------------------------
-// Initialization & Utilities
-// -------------------------------------------------------------------------------------
-function applyDebugMode() {
-  const debugMode = getSetting("debugMode", false);
-  const infoElement = document.getElementById("info");
-  if (infoElement) {
-    infoElement.style.display = debugMode ? "block" : "none";
-  }
-}
 
 // -------------------------------------------------------------------------------------
 // Loading Screen
@@ -247,7 +240,7 @@ function setupCursorTrail() {
 }
 
 // -------------------------------------------------------------------------------------
-// Mode System (Clock, Stopwatch, Timer, Focus)
+// Modes
 // -------------------------------------------------------------------------------------
 function setupModeSystem() {
   const elementIds = [
@@ -549,6 +542,15 @@ function updateFocusDisplay() {
 // -------------------------------------------------------------------------------------
 // Settings Modal
 // -------------------------------------------------------------------------------------
+
+function applyDebugMode() {
+  const debugMode = getSetting("debugMode", false);
+  const infoElement = document.getElementById("info");
+  if (infoElement) {
+    infoElement.style.display = debugMode ? "block" : "none";
+  }
+}
+
 function setupSettings() {
   const elements = getElements([
     "settings-toggle",
@@ -870,10 +872,6 @@ function triggerModeSpeech(modeName) {
 // -------------------------------------------------------------------------------------
 // Exports
 // -------------------------------------------------------------------------------------
-export function handleClick() {
-  triggerPet();
-}
-
 export function initializeApp() {
   // Expose triggerWeatherSpeech globally for test functions
   window.triggerWeatherSpeech = triggerWeatherSpeech;
