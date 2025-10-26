@@ -21,7 +21,7 @@ import {
   resetSettings,
 } from "./settings.js";
 import { setupTestFunctions } from "./util/test-functions.js";
-import { initRenderer, onSpriteClick } from "./render/renderer.js";
+import { initRenderer, onSpriteClick, updateFPS } from "./render/renderer.js";
 
 // -------------------------------------------------------------------------------------
 // App State
@@ -61,6 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupSettings();
   setupTestFunctions();
   applyDebugMode();
+  setupVersionInfo();
 });
 
 // -------------------------------------------------------------------------------------
@@ -340,7 +341,7 @@ function switchMode() {
 
   // Trigger speech for mode change if enabled
   if (getSetting("modeChangeSpeech", true)) {
-    triggerModeSpeech(nextModeName);
+    triggerModeSpeech(nextModeName, "switch");
   }
 }
 
@@ -369,8 +370,8 @@ function setupStopwatch() {
     const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
+        .toString()
+        .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
     timeDisplayElement.textContent = formattedTime;
   };
 
@@ -395,12 +396,18 @@ function setupStopwatch() {
       updateStopwatchDisplay();
     }, UPDATE_INTERVAL);
     startButton.textContent = "Pause";
+    if (getSetting("modeChangeSpeech", true)) {
+      triggerModeSpeech("stopwatch", "start");
+    }
   }
 
   function pauseStopwatch() {
     clearInterval(stopwatchIntervalId);
     stopwatchIntervalId = null;
     startButton.textContent = "Start";
+    if (getSetting("modeChangeSpeech", true)) {
+      triggerModeSpeech("stopwatch", "pause");
+    }
   }
 
   function resetStopwatch() {
@@ -408,6 +415,9 @@ function setupStopwatch() {
     updateStopwatchDisplay();
     if (isStopwatchRunning()) {
       pauseStopwatch();
+    }
+    if (getSetting("modeChangeSpeech", true)) {
+      triggerModeSpeech("stopwatch", "reset");
     }
   }
 }
@@ -449,9 +459,8 @@ function setupTimer() {
     isTimerLocked = !isTimerLocked;
     timerInputElement.readOnly = isTimerLocked;
     lockToggleButton.textContent = isTimerLocked ? "Unlock" : "Lock";
-    lockToggleButton.title = `Click to ${isTimerLocked ? "unlock" : "lock"} timer ${
-      isTimerLocked ? "for editing" : ""
-    }`;
+    lockToggleButton.title = `Click to ${isTimerLocked ? "unlock" : "lock"} timer ${isTimerLocked ? "for editing" : ""
+      }`;
 
     startButton.disabled = !isTimerLocked;
     stopButton.disabled = !isTimerLocked;
@@ -473,8 +482,12 @@ function setupTimer() {
     const wasLocked = isTimerLocked;
     isTimerLocked = true;
     timerInputElement.readOnly = true;
-    lockToggleButton.textContent = "Lock";
+    lockToggleButton.textContent = "Unlock";
     lockToggleButton.disabled = true;
+
+    if (getSetting("modeChangeSpeech", true)) {
+      triggerModeSpeech("timer", "start");
+    }
 
     timerIntervalId = setInterval(() => {
       timerRemainingTime -= 1000;
@@ -486,6 +499,11 @@ function setupTimer() {
         timerInputElement.readOnly = isTimerLocked;
         lockToggleButton.textContent = isTimerLocked ? "Unlock" : "Lock";
         lockToggleButton.disabled = false;
+
+        // Trigger completion speech
+        if (getSetting("modeChangeSpeech", true)) {
+          triggerModeSpeech("timer", "complete");
+        }
 
         // Play alarm sound if enabled
         if (getSetting("timerAlarmSound", true) && timerAlarmAudio) {
@@ -504,6 +522,9 @@ function setupTimer() {
     clearInterval(timerIntervalId);
     timerIntervalId = null;
     lockToggleButton.disabled = false;
+    if (getSetting("modeChangeSpeech", true)) {
+      triggerModeSpeech("timer", "stop");
+    }
   });
 }
 
@@ -518,6 +539,10 @@ function startFocusTimer() {
   focusElapsedTime = 0;
   updateFocusDisplay();
 
+  if (getSetting("modeChangeSpeech", true)) {
+    triggerModeSpeech("focus", "start");
+  }
+
   const FOCUS_UPDATE_INTERVAL = 1000;
   focusIntervalId = setInterval(() => {
     focusElapsedTime += FOCUS_UPDATE_INTERVAL;
@@ -529,6 +554,9 @@ function stopFocusTimer() {
   if (focusIntervalId) {
     clearInterval(focusIntervalId);
     focusIntervalId = null;
+    if (getSetting("modeChangeSpeech", true)) {
+      triggerModeSpeech("focus", "stop");
+    }
   }
 }
 
@@ -548,6 +576,18 @@ function applyDebugMode() {
   const infoElement = document.getElementById("info");
   if (infoElement) {
     infoElement.style.display = debugMode ? "block" : "none";
+  }
+}
+
+function setupVersionInfo() {
+  if (typeof window.versions !== "undefined") {
+    const electronEl = document.getElementById("electron-version");
+    const nodeEl = document.getElementById("node-version");
+    const chromeEl = document.getElementById("chrome-version");
+
+    if (electronEl) electronEl.textContent = window.versions.electron();
+    if (nodeEl) nodeEl.textContent = window.versions.node();
+    if (chromeEl) chromeEl.textContent = window.versions.chrome();
   }
 }
 
@@ -639,11 +679,10 @@ function setupSettings() {
     if (success) {
       applySettings(newSettings);
       const restartRequired =
-        oldSettings.hardwareAcceleration !== newSettings.hardwareAcceleration ||
-        oldSettings.fpsTarget !== newSettings.fpsTarget;
+        oldSettings.hardwareAcceleration !== newSettings.hardwareAcceleration;
       console.log(
         restartRequired
-          ? "[Settings] Saved! Restart app for hardware/FPS changes."
+          ? "[Settings] Saved! Restart app for hardware acceleration changes."
           : "[Settings] Saved successfully!",
       );
     } else {
@@ -667,6 +706,8 @@ function setupSettings() {
     // Day/night transition
     const { start, end } = settings.dayNightTransitionHours;
     updateDayNightState(start, end);
+    // FPS target
+    updateFPS(settings.fpsTarget);
   }
 
   // Event handlers
@@ -837,7 +878,7 @@ function triggerWeatherSpeech(condition) {
   }
 }
 
-function triggerModeSpeech(modeName) {
+function triggerModeSpeech(modeName, event = "switch") {
   if (!window.SPEECH_MESSAGES || !window.startTypewriter || !window.speechBox) {
     console.log("[Mode] Speech system not available yet");
     return;
@@ -854,15 +895,25 @@ function triggerModeSpeech(modeName) {
     // Map MODE enum values to message keys
     // "clock-mode" -> "clock", "stopwatch" -> "stopwatch", etc.
     const modeKey = modeName === "clock-mode" ? "clock" : modeName;
-    const messages = modeMessages[modeKey];
+    const modeData = modeMessages[modeKey];
+
+    if (!modeData || typeof modeData !== "object") {
+      console.log(`[Mode] No speech data found for mode: ${modeKey}`);
+      return;
+    }
+
+    // Get messages for the specific event (e.g., "switch", "start", "stop")
+    const messages = modeData[event];
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      console.log(`[Mode] No speech messages found for mode: ${modeKey}`);
+      console.log(`[Mode] No speech messages found for ${modeKey}.${event}`);
       return;
     }
 
     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    console.log(`[Mode] Triggering speech for ${modeKey}: "${randomMessage}"`);
+    console.log(
+      `[Mode] Triggering speech for ${modeKey}.${event}: "${randomMessage}"`,
+    );
     window.startTypewriter(window.speechBox, randomMessage);
   } catch (error) {
     console.error("[Mode] Failed to trigger speech:", error);

@@ -50,7 +50,7 @@ const SPRITE_CONFIG = {
     frames: 45,
     frameWidth: 110,
     frameHeight: 120,
-    speed: 0.2,
+    speed: 0.18,
     loop: false,
     scale: 2.2,
   },
@@ -68,12 +68,12 @@ const SPEECH_CONFIG = {
   bottomMargin: 20,
   textStyle: {
     fontFamily: "PencilFont, Arial",
-    fontSize: 14,
+    fontSize: 16,
     fill: 0xffffff,
     align: "left",
     wordWrap: true,
     wordWrapWidth: 296,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   typewriterSpeed: 50,
   soundEnabled: true,
@@ -103,8 +103,18 @@ loadSpeechMessages();
 
 // Sprite click callback
 let onSpriteClickCallback = null;
-export function onSpriteClick(cb) {
-  onSpriteClickCallback = cb;
+export function onSpriteClick(callback) {
+  onSpriteClickCallback = callback;
+}
+
+// Store app reference for dynamic updates
+let pixiApp = null;
+
+export function updateFPS(fps) {
+  if (pixiApp && pixiApp.ticker) {
+    pixiApp.ticker.maxFPS = fps;
+    console.log(`[Renderer] FPS target updated to: ${fps}`);
+  }
 }
 
 // Asset loading
@@ -221,13 +231,17 @@ function startTypewriter(box, text) {
       return;
     }
 
+    // Typing complete - clear interval and schedule hide
     clearInterval(data.interval);
     data.active = false;
 
+    // Calculate reading time: min 2 seconds, +550ms per word
     const words = Math.max(2, data.full.trim().split(/\s+/).length);
+    const readingTime = Math.max(2000, words * 550);
+
     setTimeout(() => {
       if (!data.active) box.visible = false;
-    }, words * 500);
+    }, readingTime);
   }, SPEECH_CONFIG.typewriterSpeed);
 }
 
@@ -259,6 +273,8 @@ async function initPixi() {
     antialias: true,
     resizeTo: container,
   });
+
+  pixiApp = app; // Store reference for dynamic updates
 
   const fpsTarget = getSetting("fpsTarget", 60);
   if (app.ticker) app.ticker.maxFPS = fpsTarget;

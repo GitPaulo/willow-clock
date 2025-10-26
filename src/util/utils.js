@@ -32,7 +32,7 @@ export function parseYAML(yamlText) {
   const lines = yamlText.split("\n");
   let currentCategory = null;
   let currentSubCategory = null;
-  let baseIndent = 0;
+  let currentSubSubCategory = null;
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -46,25 +46,40 @@ export function parseYAML(yamlText) {
       const key = trimmed.slice(0, -1);
 
       if (indent === 0) {
-        // Top-level category
+        // Top-level category (e.g., modes, weather)
         currentCategory = key;
         currentSubCategory = null;
-        result[currentCategory] = [];
-        baseIndent = indent;
-      } else if (indent > baseIndent && currentCategory) {
-        // Subcategory
+        currentSubSubCategory = null;
+        result[currentCategory] = {};
+      } else if (indent === 2 && currentCategory) {
+        // Second-level (e.g., clock, stopwatch)
         currentSubCategory = key;
-        if (Array.isArray(result[currentCategory])) {
-          result[currentCategory] = {};
-        }
-        result[currentCategory][currentSubCategory] = [];
+        currentSubSubCategory = null;
+        result[currentCategory][currentSubCategory] = {};
+      } else if (indent === 4 && currentSubCategory) {
+        // Third-level (e.g., switch, start, stop)
+        currentSubSubCategory = key;
+        result[currentCategory][currentSubCategory][currentSubSubCategory] = [];
       }
-    } else if (isMessage && currentCategory) {
+    } else if (isMessage) {
       const message = trimmed.slice(3, -1);
 
-      if (currentSubCategory) {
+      if (currentSubSubCategory) {
+        // Three-level nesting
+        result[currentCategory][currentSubCategory][currentSubSubCategory].push(
+          message,
+        );
+      } else if (currentSubCategory) {
+        // Two-level nesting
+        if (!Array.isArray(result[currentCategory][currentSubCategory])) {
+          result[currentCategory][currentSubCategory] = [];
+        }
         result[currentCategory][currentSubCategory].push(message);
-      } else if (Array.isArray(result[currentCategory])) {
+      } else if (currentCategory) {
+        // Top-level messages
+        if (!Array.isArray(result[currentCategory])) {
+          result[currentCategory] = [];
+        }
         result[currentCategory].push(message);
       }
     }

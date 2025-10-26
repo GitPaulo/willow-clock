@@ -21,13 +21,47 @@ time:
 
 modes:
   clock:
-    - "Time to check the time!"
+    switch:
+      - "Time to check the time!"
+      - "Back to the clock!"
   stopwatch:
-    - "This is a stopwatch! :3"
+    switch:
+      - "This is a stopwatch! :3"
+      - "Ready to time something?"
+    start:
+      - "Starting the stopwatch!"
+      - "And... go!"
+    pause:
+      - "Stopwatch paused!"
+      - "Taking a break from timing."
+    reset:
+      - "Stopwatch reset!"
+      - "Back to zero!"
   timer:
-    - "Ooo, setting a timer for something?"
+    switch:
+      - "Ooo, setting a timer for something?"
+      - "Timer mode activated!"
+    start:
+      - "Timer started!"
+      - "Counting down now!"
+      - "Let's see when this goes off!"
+    stop:
+      - "Timer stopped!"
+      - "Countdown halted."
+    complete:
+      - "Time's up!"
+      - "Timer finished!"
+      - "That's all the time!"
   focus:
-    - "Time to get things done! Focus!"
+    switch:
+      - "Time to get things done! Focus!"
+      - "Let's concentrate!"
+    start:
+      - "Focus mode activated!"
+      - "Time to concentrate!"
+    stop:
+      - "Focus session ended!"
+      - "Good work!"
 
 weather:
   Clear:

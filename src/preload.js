@@ -25,3 +25,9 @@ contextBridge.exposeInMainWorld("settingsAPI", {
   load: () => ipcRenderer.invoke("settings:load"),
   save: (settings) => ipcRenderer.invoke("settings:save", settings),
 });
+
+contextBridge.exposeInMainWorld("versions", {
+  node: () => process.versions.node,
+  chrome: () => process.versions.chrome,
+  electron: () => process.versions.electron,
+});
