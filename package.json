@@ -51,6 +51,7 @@
       "bin/**/*",
       "node_modules/**/*"
     ],
+    "icon": "public/assets/icons/app-icon.png",
     "mac": {
       "category": "public.app-category.utilities",
       "target": [
