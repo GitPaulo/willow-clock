@@ -1,912 +1,918 @@
 <!doctype html>
 <html>
-
-<head>
-  <meta charset="UTF-8" />
-  <!-- CSP configured for PIXI.js: unsafe-eval for shaders, blob for workers, data/file for images, weather APIs -->
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file:; connect-src 'self' data: https://ipapi.co https://api.open-meteo.com; worker-src blob:; object-src 'none';" />
-  <title>Willow Clock</title>
-  <link rel="stylesheet" href="../node_modules/@fortawesome/fontawesome-free/css/all.min.css" />
-  <style>
-    @font-face {
-      font-family: "PawFont";
-      src: url("./assets/fonts/font_paw.otf") format("opentype");
-      font-display: swap;
-    }
-
-    @font-face {
-      font-family: "PencilFont";
-      src: url("./assets/fonts/font_pencil.otf") format("opentype");
-      font-display: swap;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-        Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: transparent;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden;
-      box-sizing: border-box;
-      position: relative;
-    }
-
-    /* Main content area below title bar */
-    .content-area {
-      flex: 1;
-      padding: 15px;
-      background-color: #ff921e;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-top: none;
-      border-radius: 0 0 12px 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow-y: auto;
-      min-height: 0;
-      /* Important for flex shrinking */
-      position: relative;
-    }
-
-    #mode {
-      cursor: pointer;
-      user-select: none;
-      display: inline-block;
-      margin-bottom: 20px;
-      max-width: 600px;
-      min-height: 120px;
-      width: 90vw;
-      text-align: center;
-    }
-
-    #clock {
-      font-family:
-        "PawFont",
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Helvetica,
-        Arial,
-        sans-serif;
-      font-size: clamp(42px, 15vw, 84px);
-      font-weight: 300;
-      color: white;
-      text-align: center;
-      margin-bottom: 8px;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-      white-space: nowrap;
-      line-height: 1.1;
-      transition: all 0.3s ease;
-    }
-
-    #clock.hover {
-      transform: scale(1.05);
-      text-shadow:
-        2px 2px 4px rgba(0, 0, 0, 0.3),
-        0 0 20px rgba(255, 255, 255, 0.4),
-        0 0 35px rgba(255, 255, 255, 0.2);
-    }
-
-    #mode:active #clock {
-      transform: scale(0.98);
-      transition: all 0.1s ease;
-    }
-
-    #date {
-      font-family:
-        "PencilFont",
-        "PawFont",
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Helvetica,
-        Arial,
-        sans-serif;
-      font-size: clamp(18px, 6vw, 30px);
-      color: rgba(255, 255, 255, 0.9);
-      margin-bottom: 0;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-      text-align: center;
-      line-height: 1.2;
-      transition: all 0.3s ease;
-    }
-
-    #date.hover {
-      transform: scale(1.05);
-      text-shadow:
-        1px 1px 2px rgba(0, 0, 0, 0.3),
-        0 0 15px rgba(255, 255, 255, 0.35),
-        0 0 25px rgba(255, 255, 255, 0.15);
-    }
-
-    #weather {
-      font-family:
-        "PencilFont",
-        "PawFont",
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Helvetica,
-        Arial,
-        sans-serif;
-      font-size: clamp(14px, 4vw, 22px);
-      color: rgba(255, 255, 255, 0.8);
-      margin-top: 8px;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-      text-align: center;
-      line-height: 1.2;
-      transition: all 0.3s ease;
-    }
-
-    #weather.hover {
-      transform: scale(1.05);
-      text-shadow:
-        1px 1px 2px rgba(0, 0, 0, 0.3),
-        0 0 15px rgba(255, 255, 255, 0.25),
-        0 0 25px rgba(255, 255, 255, 0.1);
-    }
-
-    /* Mode visibility */
-    #clock-mode,
-    #stopwatch,
-    #timer,
-    #focus {
-      display: none;
-    }
-
-    #clock-mode.active,
-    #stopwatch.active,
-    #timer.active,
-    #focus.active {
-      display: block;
-    }
-
-    /* Timer mode */
-    #timer {
-      text-align: center;
-    }
-
-    /* Focus mode */
-    #focus-title {
-      font-family: "PencilFont", "PawFont", Arial, sans-serif;
-      font-size: clamp(42px, 15vw, 84px);
-      font-weight: 300;
-      color: white;
-      text-align: center;
-      margin-bottom: 8px;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-      white-space: nowrap;
-      line-height: 1.1;
-      transition: all 0.3s ease;
-    }
-
-    #focus-title.hover {
-      transform: scale(1.05);
-      text-shadow:
-        2px 2px 4px rgba(0, 0, 0, 0.3),
-        0 0 20px rgba(255, 255, 255, 0.4),
-        0 0 35px rgba(255, 255, 255, 0.2);
-    }
-
-    #focus-time {
-      font-family: "PawFont", monospace;
-      font-size: clamp(18px, 6vw, 30px);
-      font-weight: 300;
-      color: rgba(255, 255, 255, 0.9);
-      text-align: center;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-      line-height: 1.2;
-      transition: all 0.3s ease;
-    }
-
-    #focus-time.hover {
-      transform: scale(1.05);
-      text-shadow:
-        1px 1px 2px rgba(0, 0, 0, 0.3),
-        0 0 15px rgba(255, 255, 255, 0.35),
-        0 0 25px rgba(255, 255, 255, 0.15);
-    }
-
-    /* Stopwatch time display */
-    #stopwatch-time {
-      font-family:
-        "PawFont",
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Helvetica,
-        Arial,
-        sans-serif;
-      font-size: clamp(42px, 15vw, 84px);
-      font-weight: 300;
-      color: white;
-      text-align: center;
-      margin-bottom: 0;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-      white-space: nowrap;
-      line-height: 1.1;
-      transition: all 0.3s ease;
-    }
-
-    #stopwatch-time.hover {
-      transform: scale(1.05);
-      text-shadow:
-        2px 2px 4px rgba(0, 0, 0, 0.3),
-        0 0 20px rgba(255, 255, 255, 0.4),
-        0 0 35px rgba(255, 255, 255, 0.2);
-    }
-
-    /* Timer input */
-    #timer-input {
-      font-family: "PawFont", monospace;
-      font-size: clamp(42px, 15vw, 84px);
-      font-weight: 300;
-      color: white;
-      text-align: center;
-      background: transparent;
-      border: none;
-      outline: none;
-      margin: 0;
-      padding: 0;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-      width: fit-content;
-      min-width: 8ch;
-      max-width: 100%;
-      cursor: text;
-      transition: all 0.3s ease;
-      display: inline-block;
-      line-height: 1.1;
-      white-space: nowrap;
-      vertical-align: baseline;
-    }
-
-    #timer-input:read-only {
-      cursor: default;
-      color: rgba(255, 255, 255, 0.7);
-      user-select: none;
-      pointer-events: none;
-    }
-
-    #timer-input.hover {
-      transform: scale(1.05);
-      text-shadow:
-        2px 2px 4px rgba(0, 0, 0, 0.3),
-        0 0 20px rgba(255, 255, 255, 0.4),
-        0 0 35px rgba(255, 255, 255, 0.2);
-    }
-
-    #timer-input:focus {
-      text-shadow:
-        2px 2px 4px rgba(0, 0, 0, 0.3),
-        0 0 15px rgba(255, 255, 255, 0.3);
-    }
-
-    /* Mode controls (buttons) */
-    .mode-controls {
-      display: flex;
-      gap: clamp(6px, 2vw, 10px);
-      justify-content: center;
-      margin-top: clamp(2px, 1.5vw, 6px);
-      height: clamp(24px, 5vw, 32px);
-    }
-
-    .mode-controls button {
-      font-family: "PencilFont", Arial, sans-serif;
-      padding: clamp(3px, 1vw, 6px) clamp(12px, 3vw, 18px);
-      font-size: clamp(16px, 4vw, 22px);
-      background: rgba(255, 255, 255, 0.15);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: clamp(3px, 0.8vw, 6px);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      user-select: none;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-      line-height: 1;
-      height: clamp(24px, 5vw, 32px);
-      display: flex;
-      align-items: center;
-      min-width: clamp(48px, 12vw, 72px);
-    }
-
-    .mode-controls button:hover,
-    .mode-controls button:focus {
-      background: rgba(255, 255, 255, 0.25);
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      outline: none;
-    }
-
-    .mode-controls button:active {
-      transform: translateY(0);
-      box-shadow: none;
-    }
-
-    .mode-controls button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none !important;
-      box-shadow: none !important;
-      background: rgba(255, 255, 255, 0.1) !important;
-    }
-
-    .mode-controls button:disabled:hover {
-      transform: none;
-      background: rgba(255, 255, 255, 0.1);
-      box-shadow: none;
-    }
-
-    /* Interactive element hover priority */
-    .mode-controls {
-      position: relative;
-      z-index: 10;
-      pointer-events: auto;
-    }
-
-    .mode-controls button {
-      pointer-events: auto;
-      position: relative;
-      z-index: 11;
-    }
-
-    #timer-input {
-      position: relative;
-      z-index: 10;
-      pointer-events: auto;
-    }
-
-    /* Prevent mode hover effects when hovering over interactive elements */
-    .mode-controls:hover~* .hover,
-    #timer-input:hover~* .hover,
-    .mode-controls:hover .hover,
-    #timer-input:hover .hover {
-      transform: none !important;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3) !important;
-    }
-
-    #pixi-container {
-      position: relative;
-      z-index: 1;
-      width: min(90vw, 340px);
-      height: min(60vw, 260px);
-      min-height: 180px;
-      max-height: 300px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      margin: 0 auto 20px auto;
-      border-radius: 12px;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    #pixi-container canvas {
-      display: block !important;
-      width: 100% !important;
-      height: 100% !important;
-      border-radius: 11px;
-      object-fit: contain;
-      margin: 0 auto !important;
-      position: relative;
-    }
-
-    #info {
-      position: fixed;
-      bottom: 8px;
-      left: 8px;
-      right: 8px;
-      color: rgba(255, 255, 255, 0.5);
-      font-size: clamp(8px, 2vw, 11px);
-      text-align: center;
-      z-index: 10;
-      line-height: 1.3;
-    }
-
-    /* Audio toggle button - positioned below title bar */
-    #audio-toggle {
-      position: fixed;
-      top: clamp(44px, calc(32px + 3vw), 52px);
-      /* Account for 32px title bar */
-      right: clamp(12px, 3vw, 20px);
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      width: clamp(28px, 8vw, 40px);
-      height: clamp(28px, 8vw, 40px);
-      color: white;
-      font-size: clamp(12px, 3vw, 16px);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      backdrop-filter: blur(10px);
-      z-index: 1001;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-      -webkit-app-region: no-drag;
-      /* Ensure it's clickable */
-    }
-
-    #audio-toggle:hover,
-    #audio-toggle:focus {
-      background: rgba(255, 255, 255, 0.25);
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      outline: none;
-    }
-
-    #audio-toggle:active {
-      transform: translateY(0);
-      box-shadow: none;
-    }
-
-    /* Settings button - positioned below audio toggle */
-    #settings-toggle {
-      position: fixed;
-      top: clamp(80px, calc(78px + 3vw), 100px);
-      /* Below audio toggle */
-      right: clamp(12px, 3vw, 20px);
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      width: clamp(28px, 8vw, 40px);
-      height: clamp(28px, 8vw, 40px);
-      color: white;
-      font-size: clamp(12px, 3vw, 16px);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      backdrop-filter: blur(10px);
-      z-index: 1001;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-      -webkit-app-region: no-drag;
-      /* Ensure it's clickable */
-    }
-
-    #settings-toggle:hover,
-    #settings-toggle:focus {
-      background: rgba(255, 255, 255, 0.25);
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      outline: none;
-    }
-
-    #settings-toggle:active {
-      transform: translateY(0);
-      box-shadow: none;
-    }
-
-    /* Settings Modal */
-    #settings-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 2000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 1;
-      transition: opacity 0.3s ease;
-    }
-
-    #settings-modal.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .settings-backdrop {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(8px);
-    }
-
-    .settings-panel {
-      position: relative;
-      background: #2c2a2f;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 12px;
-      width: 90%;
-      max-width: 500px;
-      max-height: 80vh;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      transform: scale(1);
-      transition: transform 0.3s ease;
-    }
-
-    #settings-modal.hidden .settings-panel {
-      transform: scale(0.9);
-    }
-
-    .settings-header {
-      padding: 20px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .settings-header h2 {
-      font-family: "PencilFont", "PawFont", Arial, sans-serif;
-      font-size: 28px;
-      color: white;
-      margin: 0;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .close-settings-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      color: white;
-      font-size: 14px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      -webkit-app-region: no-drag;
-    }
-
-    .close-settings-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: scale(1.05);
-    }
-
-    .close-settings-btn:active {
-      transform: scale(0.95);
-    }
-
-    .settings-content {
-      padding: 24px;
-      overflow-y: auto;
-      flex: 1;
-      color: rgba(255, 255, 255, 0.9);
-      font-family: "PencilFont", Arial, sans-serif;
-      font-size: 16px;
-    }
-
-    .settings-section {
-      margin-bottom: 24px;
-    }
-
-    .settings-section h3 {
-      font-family: "PencilFont", "PawFont", Arial, sans-serif;
-      font-size: 18px;
-      color: white;
-      margin: 0 0 12px 0;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .setting-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 0;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .setting-item input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      margin-right: 12px;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-
-    .setting-item input[type="number"] {
-      width: 80px;
-      padding: 6px 10px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      color: white;
-      font-family: "PencilFont", Arial, sans-serif;
-      font-size: 14px;
-      text-align: center;
-    }
-
-    .setting-item input[type="number"]:focus {
-      outline: none;
-      border-color: #ff921e;
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    .setting-item select {
-      width: auto;
-      min-width: 150px;
-      padding: 6px 30px 6px 10px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      color: white;
-      font-family: "PencilFont", Arial, sans-serif;
-      font-size: 14px;
-      cursor: pointer;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      background-size: 12px;
-    }
-
-    .setting-item select:focus {
-      outline: none;
-      border-color: #ff921e;
-      background-color: rgba(255, 255, 255, 0.15);
-    }
-
-    .setting-item select:hover {
-      background-color: rgba(255, 255, 255, 0.15);
-    }
-
-    .setting-item select option {
-      background: #2c2a2f;
-      color: white;
-      padding: 8px;
-    }
-
-    .setting-item span {
-      flex: 1;
-    }
-
-    .settings-actions {
-      display: flex;
-      gap: 12px;
-      justify-content: flex-end;
-      padding-top: 16px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      margin-top: 8px;
-    }
-
-    .settings-btn {
-      padding: 10px 20px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 6px;
-      color: white;
-      font-family: "PencilFont", Arial, sans-serif;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      -webkit-app-region: no-drag;
-    }
-
-    .settings-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: translateY(-1px);
-    }
-
-    .settings-btn:active {
-      transform: translateY(0);
-    }
-
-    .settings-btn-primary {
-      background: #ff921e;
-      border-color: #ff921e;
-    }
-
-    .settings-btn-primary:hover {
-      background: #ff7a00;
-      border-color: #ff7a00;
-    }
-
-    /* Cursor Trail Paw Prints */
-    .cursor-trail-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      pointer-events: none;
-      z-index: 9999;
-      /* High z-index to appear above title bar and all other elements */
-      overflow: hidden;
-    }
-
-    .cursor-trail-paw {
-      position: absolute;
-      pointer-events: none;
-      /* Size will be set dynamically by JS */
-    }
-
-    /* Main paw pad - the large bottom part */
-    .paw-main-pad {
-      position: absolute;
-      width: 48%;
-      height: 30%;
-      background-color: rgba(255, 255, 255, 0.8);
-      border-radius: 70% 70% 50% 50% / 90% 90% 50% 50%;
-      bottom: 12%;
-      left: 26%;
-    }
-
-    /* Add detail to main pad */
-    .paw-pad-detail::before,
-    .paw-pad-detail::after {
-      content: "";
-      position: absolute;
-      background-color: rgba(255, 255, 255, 0.8);
-      z-index: 10;
-    }
-
-    .paw-pad-detail::before {
-      bottom: -11%;
-      left: 0;
-      width: 50%;
-      height: 75%;
-      border-radius: 55% 105% 68% 79% / 60% 60% 29% 50%;
-    }
-
-    .paw-pad-detail::after {
-      bottom: -11%;
-      right: 0;
-      width: 50%;
-      height: 75%;
-      border-radius: 105% 55% 79% 68% / 60% 60% 50% 29%;
-    }
-
-    /* Container for toes */
-    .paw-toes {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      top: 0;
-      left: 0;
-    }
-
-    /* Base toe style */
-    .paw-toe {
-      position: absolute;
-      background-color: rgba(255, 255, 255, 0.8);
-      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-    }
-
-    /* Outer toes - larger */
-    .paw-toe-outer-left,
-    .paw-toe-outer-right {
-      width: 22%;
-      height: 32%;
-      top: 10%;
-    }
-
-    .paw-toe-outer-left {
-      left: 28%;
-      transform: rotate(-15deg);
-    }
-
-    .paw-toe-outer-right {
-      right: 28%;
-      transform: rotate(15deg);
-    }
-
-    /* Inner toes - smaller */
-    .paw-toe-inner-left,
-    .paw-toe-inner-right {
-      width: 18%;
-      height: 30%;
-      top: 35%;
-    }
-
-    .paw-toe-inner-left {
-      left: 8%;
-      transform: rotate(-30deg);
-    }
-
-    .paw-toe-inner-right {
-      right: 8%;
-      transform: rotate(30deg);
-    }
-
-    /* title bar */
-    #titlebar {
-      height: 32px;
-      width: 100%;
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      background-color: rgb(44 42 47);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-bottom: none;
-      border-radius: 12px 12px 0 0;
-      -webkit-app-region: drag;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    #window-controls {
-      display: flex;
-      gap: 4px;
-      padding-right: 8px;
-      -webkit-app-region: no-drag;
-    }
-
-    #window-controls button {
-      -webkit-app-region: no-drag;
-      background: none;
-      border: none;
-      color: rgba(255, 255, 255, 0.7);
-      width: 28px;
-      height: 28px;
-      cursor: pointer;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-    }
-
-    #window-controls button:hover,
-    #window-controls button:focus {
-      background-color: rgba(255, 255, 255, 0.15);
-      color: white;
-      transform: translateY(-1px);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-      outline: none;
-    }
-
-    #window-controls button:active {
-      transform: translateY(0);
-      box-shadow: none;
-    }
-
-    #close-btn:hover,
-    #close-btn:focus {
-      background-color: #e81123 !important;
-      color: white !important;
-      transform: translateY(-1px);
-      box-shadow: 0 2px 6px rgba(232, 17, 35, 0.3);
-    }
-
-    #close-btn:active {
-      transform: translateY(0);
-      box-shadow: none;
-    }
-
-    /* Ensure interactive elements are non-draggable */
-    button,
-    input,
-    canvas,
-    #pixi-container,
-    #audio-toggle,
-    .mode-controls {
-      -webkit-app-region: no-drag;
-    }
-  </style>
-</head>
-
-<body>
-  <!-- Loading screen -->
-  <div id="loading-screen" style="
+  <head>
+    <meta charset="UTF-8" />
+    <!-- CSP configured for PIXI.js: unsafe-eval for shaders, blob for workers, data/file for images, weather APIs -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file:; connect-src 'self' data: https://ipapi.co https://api.open-meteo.com; worker-src blob:; object-src 'none';"
+    />
+    <title>Willow Clock</title>
+    <link
+      rel="stylesheet"
+      href="../node_modules/@fortawesome/fontawesome-free/css/all.min.css"
+    />
+    <style>
+      @font-face {
+        font-family: "PawFont";
+        src: url("./assets/fonts/font_paw.otf") format("opentype");
+        font-display: swap;
+      }
+
+      @font-face {
+        font-family: "PencilFont";
+        src: url("./assets/fonts/font_pencil.otf") format("opentype");
+        font-display: swap;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        box-sizing: border-box;
+        position: relative;
+      }
+
+      /* Main content area below title bar */
+      .content-area {
+        flex: 1;
+        padding: 15px;
+        background-color: #ff921e;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow-y: auto;
+        min-height: 0;
+        /* Important for flex shrinking */
+        position: relative;
+      }
+
+      #mode {
+        cursor: pointer;
+        user-select: none;
+        display: inline-block;
+        margin-bottom: 20px;
+        max-width: 600px;
+        min-height: 120px;
+        width: 90vw;
+        text-align: center;
+      }
+
+      #clock {
+        font-family:
+          "PawFont",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        font-size: clamp(42px, 15vw, 84px);
+        font-weight: 300;
+        color: white;
+        text-align: center;
+        margin-bottom: 8px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        white-space: nowrap;
+        line-height: 1.1;
+        transition: all 0.3s ease;
+      }
+
+      #clock.hover {
+        transform: scale(1.05);
+        text-shadow:
+          2px 2px 4px rgba(0, 0, 0, 0.3),
+          0 0 20px rgba(255, 255, 255, 0.4),
+          0 0 35px rgba(255, 255, 255, 0.2);
+      }
+
+      #mode:active #clock {
+        transform: scale(0.98);
+        transition: all 0.1s ease;
+      }
+
+      #date {
+        font-family:
+          "PencilFont",
+          "PawFont",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        font-size: clamp(18px, 6vw, 30px);
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 0;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        line-height: 1.2;
+        transition: all 0.3s ease;
+      }
+
+      #date.hover {
+        transform: scale(1.05);
+        text-shadow:
+          1px 1px 2px rgba(0, 0, 0, 0.3),
+          0 0 15px rgba(255, 255, 255, 0.35),
+          0 0 25px rgba(255, 255, 255, 0.15);
+      }
+
+      #weather {
+        font-family:
+          "PencilFont",
+          "PawFont",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        font-size: clamp(14px, 4vw, 22px);
+        color: rgba(255, 255, 255, 0.8);
+        margin-top: 8px;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        line-height: 1.2;
+        transition: all 0.3s ease;
+      }
+
+      #weather.hover {
+        transform: scale(1.05);
+        text-shadow:
+          1px 1px 2px rgba(0, 0, 0, 0.3),
+          0 0 15px rgba(255, 255, 255, 0.25),
+          0 0 25px rgba(255, 255, 255, 0.1);
+      }
+
+      /* Mode visibility */
+      #clock-mode,
+      #stopwatch,
+      #timer,
+      #focus {
+        display: none;
+      }
+
+      #clock-mode.active,
+      #stopwatch.active,
+      #timer.active,
+      #focus.active {
+        display: block;
+      }
+
+      /* Timer mode */
+      #timer {
+        text-align: center;
+      }
+
+      /* Focus mode */
+      #focus-title {
+        font-family: "PencilFont", "PawFont", Arial, sans-serif;
+        font-size: clamp(42px, 15vw, 84px);
+        font-weight: 300;
+        color: white;
+        text-align: center;
+        margin-bottom: 8px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        white-space: nowrap;
+        line-height: 1.1;
+        transition: all 0.3s ease;
+      }
+
+      #focus-title.hover {
+        transform: scale(1.05);
+        text-shadow:
+          2px 2px 4px rgba(0, 0, 0, 0.3),
+          0 0 20px rgba(255, 255, 255, 0.4),
+          0 0 35px rgba(255, 255, 255, 0.2);
+      }
+
+      #focus-time {
+        font-family: "PawFont", monospace;
+        font-size: clamp(18px, 6vw, 30px);
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.9);
+        text-align: center;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        line-height: 1.2;
+        transition: all 0.3s ease;
+      }
+
+      #focus-time.hover {
+        transform: scale(1.05);
+        text-shadow:
+          1px 1px 2px rgba(0, 0, 0, 0.3),
+          0 0 15px rgba(255, 255, 255, 0.35),
+          0 0 25px rgba(255, 255, 255, 0.15);
+      }
+
+      /* Stopwatch time display */
+      #stopwatch-time {
+        font-family:
+          "PawFont",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        font-size: clamp(42px, 15vw, 84px);
+        font-weight: 300;
+        color: white;
+        text-align: center;
+        margin-bottom: 0;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        white-space: nowrap;
+        line-height: 1.1;
+        transition: all 0.3s ease;
+      }
+
+      #stopwatch-time.hover {
+        transform: scale(1.05);
+        text-shadow:
+          2px 2px 4px rgba(0, 0, 0, 0.3),
+          0 0 20px rgba(255, 255, 255, 0.4),
+          0 0 35px rgba(255, 255, 255, 0.2);
+      }
+
+      /* Timer input */
+      #timer-input {
+        font-family: "PawFont", monospace;
+        font-size: clamp(42px, 15vw, 84px);
+        font-weight: 300;
+        color: white;
+        text-align: center;
+        background: transparent;
+        border: none;
+        outline: none;
+        margin: 0;
+        padding: 0;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        width: fit-content;
+        min-width: 8ch;
+        max-width: 100%;
+        cursor: text;
+        transition: all 0.3s ease;
+        display: inline-block;
+        line-height: 1.1;
+        white-space: nowrap;
+        vertical-align: baseline;
+      }
+
+      #timer-input:read-only {
+        cursor: default;
+        color: rgba(255, 255, 255, 0.7);
+        user-select: none;
+        pointer-events: none;
+      }
+
+      #timer-input.hover {
+        transform: scale(1.05);
+        text-shadow:
+          2px 2px 4px rgba(0, 0, 0, 0.3),
+          0 0 20px rgba(255, 255, 255, 0.4),
+          0 0 35px rgba(255, 255, 255, 0.2);
+      }
+
+      #timer-input:focus {
+        text-shadow:
+          2px 2px 4px rgba(0, 0, 0, 0.3),
+          0 0 15px rgba(255, 255, 255, 0.3);
+      }
+
+      /* Mode controls (buttons) */
+      .mode-controls {
+        display: flex;
+        gap: clamp(6px, 2vw, 10px);
+        justify-content: center;
+        margin-top: clamp(2px, 1.5vw, 6px);
+        height: clamp(24px, 5vw, 32px);
+      }
+
+      .mode-controls button {
+        font-family: "PencilFont", Arial, sans-serif;
+        padding: clamp(3px, 1vw, 6px) clamp(12px, 3vw, 18px);
+        font-size: clamp(16px, 4vw, 22px);
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: clamp(3px, 0.8vw, 6px);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        line-height: 1;
+        height: clamp(24px, 5vw, 32px);
+        display: flex;
+        align-items: center;
+        min-width: clamp(48px, 12vw, 72px);
+      }
+
+      .mode-controls button:hover,
+      .mode-controls button:focus {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+
+      .mode-controls button:active {
+        transform: translateY(0);
+        box-shadow: none;
+      }
+
+      .mode-controls button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+      }
+
+      .mode-controls button:disabled:hover {
+        transform: none;
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: none;
+      }
+
+      /* Interactive element hover priority */
+      .mode-controls {
+        position: relative;
+        z-index: 10;
+        pointer-events: auto;
+      }
+
+      .mode-controls button {
+        pointer-events: auto;
+        position: relative;
+        z-index: 11;
+      }
+
+      #timer-input {
+        position: relative;
+        z-index: 10;
+        pointer-events: auto;
+      }
+
+      /* Prevent mode hover effects when hovering over interactive elements */
+      .mode-controls:hover ~ * .hover,
+      #timer-input:hover ~ * .hover,
+      .mode-controls:hover .hover,
+      #timer-input:hover .hover {
+        transform: none !important;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3) !important;
+      }
+
+      #pixi-container {
+        position: relative;
+        z-index: 1;
+        width: min(90vw, 340px);
+        height: min(60vw, 260px);
+        min-height: 180px;
+        max-height: 300px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        margin: 0 auto 20px auto;
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      #pixi-container canvas {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 11px;
+        object-fit: contain;
+        margin: 0 auto !important;
+        position: relative;
+      }
+
+      #info {
+        position: fixed;
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: clamp(8px, 2vw, 11px);
+        text-align: center;
+        z-index: 10;
+        line-height: 1.3;
+      }
+
+      /* Audio toggle button - positioned below title bar */
+      #audio-toggle {
+        position: fixed;
+        top: clamp(44px, calc(32px + 3vw), 52px);
+        /* Account for 32px title bar */
+        right: clamp(12px, 3vw, 20px);
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        width: clamp(28px, 8vw, 40px);
+        height: clamp(28px, 8vw, 40px);
+        color: white;
+        font-size: clamp(12px, 3vw, 16px);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+        z-index: 1001;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        -webkit-app-region: no-drag;
+        /* Ensure it's clickable */
+      }
+
+      #audio-toggle:hover,
+      #audio-toggle:focus {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+
+      #audio-toggle:active {
+        transform: translateY(0);
+        box-shadow: none;
+      }
+
+      /* Settings button - positioned below audio toggle */
+      #settings-toggle {
+        position: fixed;
+        top: clamp(80px, calc(78px + 3vw), 100px);
+        /* Below audio toggle */
+        right: clamp(12px, 3vw, 20px);
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        width: clamp(28px, 8vw, 40px);
+        height: clamp(28px, 8vw, 40px);
+        color: white;
+        font-size: clamp(12px, 3vw, 16px);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+        z-index: 1001;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        -webkit-app-region: no-drag;
+        /* Ensure it's clickable */
+      }
+
+      #settings-toggle:hover,
+      #settings-toggle:focus {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+
+      #settings-toggle:active {
+        transform: translateY(0);
+        box-shadow: none;
+      }
+
+      /* Settings Modal */
+      #settings-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+      }
+
+      #settings-modal.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .settings-backdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(8px);
+      }
+
+      .settings-panel {
+        position: relative;
+        background: #2c2a2f;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 80vh;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transform: scale(1);
+        transition: transform 0.3s ease;
+      }
+
+      #settings-modal.hidden .settings-panel {
+        transform: scale(0.9);
+      }
+
+      .settings-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .settings-header h2 {
+        font-family: "PencilFont", "PawFont", Arial, sans-serif;
+        font-size: 28px;
+        color: white;
+        margin: 0;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .close-settings-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        color: white;
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        -webkit-app-region: no-drag;
+      }
+
+      .close-settings-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+      }
+
+      .close-settings-btn:active {
+        transform: scale(0.95);
+      }
+
+      .settings-content {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        color: rgba(255, 255, 255, 0.9);
+        font-family: "PencilFont", Arial, sans-serif;
+        font-size: 16px;
+      }
+
+      .settings-section {
+        margin-bottom: 24px;
+      }
+
+      .settings-section h3 {
+        font-family: "PencilFont", "PawFont", Arial, sans-serif;
+        font-size: 18px;
+        color: white;
+        margin: 0 0 12px 0;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .setting-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .setting-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin-right: 12px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      .setting-item input[type="number"] {
+        width: 80px;
+        padding: 6px 10px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        color: white;
+        font-family: "PencilFont", Arial, sans-serif;
+        font-size: 14px;
+        text-align: center;
+      }
+
+      .setting-item input[type="number"]:focus {
+        outline: none;
+        border-color: #ff921e;
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .setting-item select {
+        width: auto;
+        min-width: 150px;
+        padding: 6px 30px 6px 10px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        color: white;
+        font-family: "PencilFont", Arial, sans-serif;
+        font-size: 14px;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 12px;
+      }
+
+      .setting-item select:focus {
+        outline: none;
+        border-color: #ff921e;
+        background-color: rgba(255, 255, 255, 0.15);
+      }
+
+      .setting-item select:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+      }
+
+      .setting-item select option {
+        background: #2c2a2f;
+        color: white;
+        padding: 8px;
+      }
+
+      .setting-item span {
+        flex: 1;
+      }
+
+      .settings-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 8px;
+      }
+
+      .settings-btn {
+        padding: 10px 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: white;
+        font-family: "PencilFont", Arial, sans-serif;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        -webkit-app-region: no-drag;
+      }
+
+      .settings-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+      }
+
+      .settings-btn:active {
+        transform: translateY(0);
+      }
+
+      .settings-btn-primary {
+        background: #ff921e;
+        border-color: #ff921e;
+      }
+
+      .settings-btn-primary:hover {
+        background: #ff7a00;
+        border-color: #ff7a00;
+      }
+
+      /* Cursor Trail Paw Prints */
+      .cursor-trail-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 9999;
+        /* High z-index to appear above title bar and all other elements */
+        overflow: hidden;
+      }
+
+      .cursor-trail-paw {
+        position: absolute;
+        pointer-events: none;
+        /* Size will be set dynamically by JS */
+      }
+
+      /* Main paw pad - the large bottom part */
+      .paw-main-pad {
+        position: absolute;
+        width: 48%;
+        height: 30%;
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 70% 70% 50% 50% / 90% 90% 50% 50%;
+        bottom: 12%;
+        left: 26%;
+      }
+
+      /* Add detail to main pad */
+      .paw-pad-detail::before,
+      .paw-pad-detail::after {
+        content: "";
+        position: absolute;
+        background-color: rgba(255, 255, 255, 0.8);
+        z-index: 10;
+      }
+
+      .paw-pad-detail::before {
+        bottom: -11%;
+        left: 0;
+        width: 50%;
+        height: 75%;
+        border-radius: 55% 105% 68% 79% / 60% 60% 29% 50%;
+      }
+
+      .paw-pad-detail::after {
+        bottom: -11%;
+        right: 0;
+        width: 50%;
+        height: 75%;
+        border-radius: 105% 55% 79% 68% / 60% 60% 50% 29%;
+      }
+
+      /* Container for toes */
+      .paw-toes {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+      }
+
+      /* Base toe style */
+      .paw-toe {
+        position: absolute;
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      }
+
+      /* Outer toes - larger */
+      .paw-toe-outer-left,
+      .paw-toe-outer-right {
+        width: 22%;
+        height: 32%;
+        top: 10%;
+      }
+
+      .paw-toe-outer-left {
+        left: 28%;
+        transform: rotate(-15deg);
+      }
+
+      .paw-toe-outer-right {
+        right: 28%;
+        transform: rotate(15deg);
+      }
+
+      /* Inner toes - smaller */
+      .paw-toe-inner-left,
+      .paw-toe-inner-right {
+        width: 18%;
+        height: 30%;
+        top: 35%;
+      }
+
+      .paw-toe-inner-left {
+        left: 8%;
+        transform: rotate(-30deg);
+      }
+
+      .paw-toe-inner-right {
+        right: 8%;
+        transform: rotate(30deg);
+      }
+
+      /* title bar */
+      #titlebar {
+        height: 32px;
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        background-color: rgb(44 42 47);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-bottom: none;
+        border-radius: 12px 12px 0 0;
+        -webkit-app-region: drag;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      #window-controls {
+        display: flex;
+        gap: 4px;
+        padding-right: 8px;
+        -webkit-app-region: no-drag;
+      }
+
+      #window-controls button {
+        -webkit-app-region: no-drag;
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.7);
+        width: 28px;
+        height: 28px;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+
+      #window-controls button:hover,
+      #window-controls button:focus {
+        background-color: rgba(255, 255, 255, 0.15);
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        outline: none;
+      }
+
+      #window-controls button:active {
+        transform: translateY(0);
+        box-shadow: none;
+      }
+
+      #close-btn:hover,
+      #close-btn:focus {
+        background-color: #e81123 !important;
+        color: white !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(232, 17, 35, 0.3);
+      }
+
+      #close-btn:active {
+        transform: translateY(0);
+        box-shadow: none;
+      }
+
+      /* Ensure interactive elements are non-draggable */
+      button,
+      input,
+      canvas,
+      #pixi-container,
+      #audio-toggle,
+      .mode-controls {
+        -webkit-app-region: no-drag;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Loading screen -->
+    <div
+      id="loading-screen"
+      style="
         position: fixed;
         top: 0;
         left: 0;
@@ -918,195 +924,240 @@
         align-items: center;
         justify-content: center;
         z-index: 10000;
-      ">
-    <div class="loading-text" style="
+      "
+    >
+      <div
+        class="loading-text"
+        style="
           font-family: &quot;PawFont&quot;, Arial, sans-serif;
           font-size: 48px;
           color: white;
           text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
           margin-bottom: 20px;
-        ">
-      Willow Clock
-    </div>
-  </div>
-
-  <!-- Title bar -->
-  <div id="titlebar">
-    <div id="window-controls">
-      <button id="min-btn" title="Minimize">
-        <i class="fas fa-minus"></i>
-      </button>
-      <button id="close-btn" title="Close">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-  </div>
-
-  <!-- Main content wrapper -->
-  <div class="content-area">
-    <div id="mode">
-      <!-- Clock Mode -->
-      <div id="clock-mode" class="active">
-        <div id="clock">00:00:00</div>
-        <div id="date">Loading...</div>
-        <div id="weather">Loading weather...</div>
+        "
+      >
+        Willow Clock
       </div>
+    </div>
 
-      <!-- Stopwatch Mode -->
-      <div id="stopwatch">
-        <div id="stopwatch-time">00:00:00</div>
-        <div class="mode-controls">
-          <button id="stopwatch-start">Start</button>
-          <button id="stopwatch-reset">Reset</button>
+    <!-- Title bar -->
+    <div id="titlebar">
+      <div id="window-controls">
+        <button id="min-btn" title="Minimize">
+          <i class="fas fa-minus"></i>
+        </button>
+        <button id="close-btn" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main content wrapper -->
+    <div class="content-area">
+      <div id="mode">
+        <!-- Clock Mode -->
+        <div id="clock-mode" class="active">
+          <div id="clock">00:00:00</div>
+          <div id="date">Loading...</div>
+          <div id="weather">Loading weather...</div>
         </div>
-      </div>
 
-      <!-- Timer Mode -->
-      <div id="timer">
-        <input id="timer-input" type="text" value="00:05:00" maxlength="8" />
-        <div class="mode-controls">
-          <button id="timer-edit" title="Lock/Unlock timer for editing">
-            Unlock
-          </button>
-          <button id="timer-start">Start</button>
-          <button id="timer-stop">Stop</button>
+        <!-- Stopwatch Mode -->
+        <div id="stopwatch">
+          <div id="stopwatch-time">00:00:00</div>
+          <div class="mode-controls">
+            <button id="stopwatch-start">Start</button>
+            <button id="stopwatch-reset">Reset</button>
+          </div>
         </div>
-      </div>
 
-      <!-- Focus Mode -->
-      <div id="focus">
-        <div id="focus-title">Focus!</div>
-        <div id="focus-time">00:00:00</div>
-      </div>
-    </div>
-    <div id="pixi-container"></div>
-
-    <!-- Audio Controls -->
-    <button id="audio-toggle" title="Toggle background music">
-      <i class="fas fa-volume-up" id="volume-icon"></i>
-    </button>
-
-    <!-- Settings Button -->
-    <button id="settings-toggle" title="Settings">
-      <i class="fas fa-cog"></i>
-    </button>
-
-    <!-- Background Music -->
-    <audio id="background-music" loop preload="auto">
-      <source src="./assets/audio/backtrack.wav" type="audio/wav" />
-      Your browser does not support the audio element.
-    </audio>
-
-    <div id="info">
-      Electron: <span id="electron-version"></span> | Node:
-      <span id="node-version"></span> | Chrome:
-      <span id="chrome-version"></span> | State:
-      <span id="state-info">loading...</span> | FPS:
-      <span id="fps-info">0</span>
-    </div>
-
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="hidden">
-      <div class="settings-backdrop"></div>
-      <div class="settings-panel">
-        <div class="settings-header">
-          <h2>Settings</h2>
-          <button id="close-settings" class="close-settings-btn" title="Close settings">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="settings-content">
-          <!-- Audio Settings -->
-          <div class="settings-section">
-            <h3>Audio</h3>
-            <label class="setting-item">
-              <input type="checkbox" id="setting-audio-on-start" />
-              <span>Play music on startup</span>
-            </label>
-            <label class="setting-item">
-              <input type="checkbox" id="setting-timer-alarm" />
-              <span>Play sound when timer completes</span>
-            </label>
-          </div>
-
-          <!-- Visual Settings -->
-          <div class="settings-section">
-            <h3>Visual</h3>
-            <label class="setting-item">
-              <input type="checkbox" id="setting-cursor-trail" />
-              <span>Show cursor trail (paw prints)</span>
-            </label>
-            <label class="setting-item">
-              <input type="checkbox" id="setting-debug-mode" />
-              <span>Show debug info (FPS, state)</span>
-            </label>
-            <label class="setting-item">
-              <input type="checkbox" id="setting-mode-change-speech" />
-              <span>Speak when switching modes</span>
-            </label>
-          </div>
-
-          <!-- Weather Settings -->
-          <div class="settings-section">
-            <h3>Weather</h3>
-            <label class="setting-item">
-              <span>Update frequency (minutes)</span>
-              <input type="number" id="setting-weather-frequency" min="1" max="120" step="1" class="setting-input" />
-            </label>
-            <label class="setting-item">
-              <span>Temperature unit</span>
-              <select id="setting-temperature-unit" class="setting-input">
-                <option value="celsius">Celsius (°C)</option>
-                <option value="fahrenheit">Fahrenheit (°F)</option>
-              </select>
-            </label>
-          </div>
-
-          <!-- Behavior Settings -->
-          <div class="settings-section">
-            <h3>Behavior</h3>
-            <label class="setting-item">
-              <span>Day mode starts at (hour)</span>
-              <input type="number" id="setting-day-start" min="0" max="23" step="1" class="setting-input" />
-            </label>
-            <label class="setting-item">
-              <span>Night mode starts at (hour)</span>
-              <input type="number" id="setting-day-end" min="0" max="23" step="1" class="setting-input" />
-            </label>
-          </div>
-
-          <!-- Performance Settings -->
-          <div class="settings-section">
-            <h3>Performance</h3>
-            <label class="setting-item">
-              <input type="checkbox" id="setting-hardware-acceleration" />
-              <span>Hardware acceleration (requires restart)</span>
-            </label>
-            <label class="setting-item">
-              <span>FPS target</span>
-              <input type="number" id="setting-fps-target" min="30" max="144" step="10" class="setting-input" />
-            </label>
-          </div>
-
-          <!-- Actions -->
-          <div class="settings-actions">
-            <button id="settings-reset" class="settings-btn">
-              Reset to Defaults
+        <!-- Timer Mode -->
+        <div id="timer">
+          <input id="timer-input" type="text" value="00:05:00" maxlength="8" />
+          <div class="mode-controls">
+            <button id="timer-edit" title="Lock/Unlock timer for editing">
+              Unlock
             </button>
-            <button id="settings-save" class="settings-btn settings-btn-primary">
-              Save
+            <button id="timer-start">Start</button>
+            <button id="timer-stop">Stop</button>
+          </div>
+        </div>
+
+        <!-- Focus Mode -->
+        <div id="focus">
+          <div id="focus-title">Focus!</div>
+          <div id="focus-time">00:00:00</div>
+        </div>
+      </div>
+      <div id="pixi-container"></div>
+
+      <!-- Audio Controls -->
+      <button id="audio-toggle" title="Toggle background music">
+        <i class="fas fa-volume-up" id="volume-icon"></i>
+      </button>
+
+      <!-- Settings Button -->
+      <button id="settings-toggle" title="Settings">
+        <i class="fas fa-cog"></i>
+      </button>
+
+      <!-- Background Music -->
+      <audio id="background-music" loop preload="auto">
+        <source src="./assets/audio/backtrack.wav" type="audio/wav" />
+        Your browser does not support the audio element.
+      </audio>
+
+      <div id="info">
+        Electron: <span id="electron-version"></span> | Node:
+        <span id="node-version"></span> | Chrome:
+        <span id="chrome-version"></span> | State:
+        <span id="state-info">loading...</span> | FPS:
+        <span id="fps-info">0</span>
+      </div>
+
+      <!-- Settings Modal -->
+      <div id="settings-modal" class="hidden">
+        <div class="settings-backdrop"></div>
+        <div class="settings-panel">
+          <div class="settings-header">
+            <h2>Settings</h2>
+            <button
+              id="close-settings"
+              class="close-settings-btn"
+              title="Close settings"
+            >
+              <i class="fas fa-times"></i>
             </button>
           </div>
+          <div class="settings-content">
+            <!-- Audio Settings -->
+            <div class="settings-section">
+              <h3>Audio</h3>
+              <label class="setting-item">
+                <input type="checkbox" id="setting-audio-on-start" />
+                <span>Play music on startup</span>
+              </label>
+              <label class="setting-item">
+                <input type="checkbox" id="setting-timer-alarm" />
+                <span>Play sound when timer completes</span>
+              </label>
+            </div>
+
+            <!-- Visual Settings -->
+            <div class="settings-section">
+              <h3>Visual</h3>
+              <label class="setting-item">
+                <input type="checkbox" id="setting-cursor-trail" />
+                <span>Show cursor trail (paw prints)</span>
+              </label>
+              <label class="setting-item">
+                <input type="checkbox" id="setting-debug-mode" />
+                <span>Show debug info (FPS, state)</span>
+              </label>
+              <label class="setting-item">
+                <input type="checkbox" id="setting-mode-change-speech" />
+                <span>Speak when switching modes</span>
+              </label>
+              <label class="setting-item">
+                <span>Clock format</span>
+                <select id="setting-clock-format" class="setting-input">
+                  <option value="24">24-hour (14:30)</option>
+                  <option value="12">12-hour (2:30 PM)</option>
+                </select>
+              </label>
+            </div>
+
+            <!-- Weather Settings -->
+            <div class="settings-section">
+              <h3>Weather</h3>
+              <label class="setting-item">
+                <span>Update frequency (minutes)</span>
+                <input
+                  type="number"
+                  id="setting-weather-frequency"
+                  min="1"
+                  max="120"
+                  step="1"
+                  class="setting-input"
+                />
+              </label>
+              <label class="setting-item">
+                <span>Temperature unit</span>
+                <select id="setting-temperature-unit" class="setting-input">
+                  <option value="celsius">Celsius (°C)</option>
+                  <option value="fahrenheit">Fahrenheit (°F)</option>
+                </select>
+              </label>
+            </div>
+
+            <!-- Behavior Settings -->
+            <div class="settings-section">
+              <h3>Behavior</h3>
+              <label class="setting-item">
+                <span>Day mode starts at (hour)</span>
+                <input
+                  type="number"
+                  id="setting-day-start"
+                  min="0"
+                  max="23"
+                  step="1"
+                  class="setting-input"
+                />
+              </label>
+              <label class="setting-item">
+                <span>Night mode starts at (hour)</span>
+                <input
+                  type="number"
+                  id="setting-day-end"
+                  min="0"
+                  max="23"
+                  step="1"
+                  class="setting-input"
+                />
+              </label>
+            </div>
+
+            <!-- Performance Settings -->
+            <div class="settings-section">
+              <h3>Performance</h3>
+              <label class="setting-item">
+                <input type="checkbox" id="setting-hardware-acceleration" />
+                <span>Hardware acceleration (requires restart)</span>
+              </label>
+              <label class="setting-item">
+                <span>FPS target</span>
+                <input
+                  type="number"
+                  id="setting-fps-target"
+                  min="30"
+                  max="144"
+                  step="10"
+                  class="setting-input"
+                />
+              </label>
+            </div>
+
+            <!-- Actions -->
+            <div class="settings-actions">
+              <button id="settings-reset" class="settings-btn">
+                Reset to Defaults
+              </button>
+              <button
+                id="settings-save"
+                class="settings-btn settings-btn-primary"
+              >
+                Save
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- App script -->
-  <script type="module" src="../src/app.js"></script>
+    <!-- App script -->
+    <script type="module" src="../src/app.js"></script>
 
-  <!-- Window controls script -->
-  <script type="module" src="../src/browser.js"></script>
-</body>
-
+    <!-- Window controls script -->
+    <script type="module" src="../src/browser.js"></script>
+  </body>
 </html>

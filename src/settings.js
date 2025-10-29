@@ -6,6 +6,7 @@ const DEFAULT_SETTINGS = {
   // Visual settings
   cursorTrailEnabled: true,
   debugMode: false,
+  clockFormat24Hour: true, // true = 24-hour format, false = 12-hour format
 
   // Speech settings
   modeChangeSpeech: true,

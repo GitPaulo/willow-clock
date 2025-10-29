@@ -27,6 +27,74 @@ export function formatTime(milliseconds) {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
+export function isNightTime(dayStart = 6, dayEnd = 18) {
+  const hours = new Date().getHours();
+  return hours < dayStart || hours >= dayEnd;
+}
+
+export function isDayTime(dayStart = 6, dayEnd = 18) {
+  return !isNightTime(dayStart, dayEnd);
+}
+
+export function formatClockTime(date, is24Hour = true) {
+  if (is24Hour) {
+    // 24-hour format: HH:MM:SS
+    return `${date.getHours().toString().padStart(2, "0")}:${date
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}:${date.getSeconds().toString().padStart(2, "0")}`;
+  } else {
+    // 12-hour format: H:MM:SS AM/PM
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+    const ampm = hours >= 12 ? "PM" : "AM";
+
+    // Convert to 12-hour format
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")} ${ampm}`;
+  }
+}
+
+export function flashElement(element, duration = 6000) {
+  if (!element) return;
+
+  const originalStyle = {
+    color: element.style.color || "",
+    textShadow: element.style.textShadow || "",
+    transition: element.style.transition || "",
+  };
+
+  // Soft orange flash color (matches app theme)
+  const flashColor = "#ff9966";
+  const flashInterval = 500; // Flash every 500ms (12 flashes over 6 seconds)
+
+  element.style.transition = "all 0.2s ease";
+  let flashCount = 0;
+  const maxFlashes = Math.floor(duration / flashInterval);
+
+  const timer = setInterval(() => {
+    const isFlashOn = flashCount % 2 === 0;
+
+    if (isFlashOn) {
+      element.style.color = flashColor;
+      element.style.textShadow = `0 0 15px ${flashColor}, 2px 2px 4px rgba(0, 0, 0, 0.3)`;
+    } else {
+      element.style.color = originalStyle.color;
+      element.style.textShadow = originalStyle.textShadow;
+    }
+
+    flashCount++;
+    if (flashCount >= maxFlashes) {
+      clearInterval(timer);
+      // Restore original styling
+      Object.assign(element.style, originalStyle);
+    }
+  }, flashInterval);
+}
+
 export function parseYAML(yamlText) {
   const result = {};
   const lines = yamlText.split("\n");

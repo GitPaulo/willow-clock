@@ -5,6 +5,9 @@ import {
   getElements,
   toggleHoverStates,
   formatTime,
+  isNightTime,
+  formatClockTime,
+  flashElement,
 } from "./util/utils.js";
 import {
   updateDayNightState,
@@ -49,7 +52,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   setupLoadingScreen();
   await initRenderer();
-  onSpriteClick(triggerPet);
+  onSpriteClick(handlePetAttempt);
   initializeApp();
   setupBackgroundMusic();
   setupCursorTrail();
@@ -370,8 +373,8 @@ function setupStopwatch() {
     const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}:${seconds
-        .toString()
-        .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
+      .toString()
+      .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
     timeDisplayElement.textContent = formattedTime;
   };
 
@@ -459,8 +462,9 @@ function setupTimer() {
     isTimerLocked = !isTimerLocked;
     timerInputElement.readOnly = isTimerLocked;
     lockToggleButton.textContent = isTimerLocked ? "Unlock" : "Lock";
-    lockToggleButton.title = `Click to ${isTimerLocked ? "unlock" : "lock"} timer ${isTimerLocked ? "for editing" : ""
-      }`;
+    lockToggleButton.title = `Click to ${isTimerLocked ? "unlock" : "lock"} timer ${
+      isTimerLocked ? "for editing" : ""
+    }`;
 
     startButton.disabled = !isTimerLocked;
     stopButton.disabled = !isTimerLocked;
@@ -504,6 +508,9 @@ function setupTimer() {
         if (getSetting("modeChangeSpeech", true)) {
           triggerModeSpeech("timer", "complete");
         }
+
+        // Flash the timer display (synced with audio duration)
+        flashElement(timerInputElement, 6000);
 
         // Play alarm sound if enabled
         if (getSetting("timerAlarmSound", true) && timerAlarmAudio) {
@@ -609,6 +616,7 @@ function setupSettings() {
     "setting-day-end",
     "setting-hardware-acceleration",
     "setting-fps-target",
+    "setting-clock-format",
   ]);
 
   const {
@@ -652,6 +660,10 @@ function setupSettings() {
         settings.hardwareAcceleration;
     if (elements["setting-fps-target"])
       elements["setting-fps-target"].value = settings.fpsTarget;
+    if (elements["setting-clock-format"])
+      elements["setting-clock-format"].value = settings.clockFormat24Hour
+        ? "24"
+        : "12";
   }
 
   // Save settings from UI
@@ -673,6 +685,7 @@ function setupSettings() {
       hardwareAcceleration:
         elements["setting-hardware-acceleration"]?.checked ?? true,
       fpsTarget: parseInt(elements["setting-fps-target"]?.value) || 60,
+      clockFormat24Hour: elements["setting-clock-format"]?.value === "24",
     };
 
     const success = await saveSettings(newSettings);
@@ -756,10 +769,8 @@ function updateClock() {
   if (!clockEl || !dateEl) return;
 
   const now = new Date();
-  const time = `${now.getHours().toString().padStart(2, "0")}:${now
-    .getMinutes()
-    .toString()
-    .padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+  const is24Hour = getSetting("clockFormat24Hour", true);
+  const time = formatClockTime(now, is24Hour);
   clockEl.textContent = time;
 
   const date = now.toLocaleDateString("en-US", {
@@ -835,6 +846,25 @@ function updateWeatherDisplay() {
   }
 
   weatherElement.textContent = `${tempText}, ${condition}`;
+}
+
+// -------------------------------------------------------------------------------------
+// Petting Logic
+// -------------------------------------------------------------------------------------
+function handlePetAttempt() {
+  const { start, end } = getSetting("dayNightTransitionHours", {
+    start: 6,
+    end: 18,
+  });
+
+  if (isNightTime(start, end)) {
+    console.log("[App] Petting blocked - it's night time");
+    triggerBlockedPettingSpeech();
+    return;
+  }
+
+  // Allow petting during day time
+  triggerPet();
 }
 
 // -------------------------------------------------------------------------------------
@@ -917,6 +947,33 @@ function triggerModeSpeech(modeName, event = "switch") {
     window.startTypewriter(window.speechBox, randomMessage);
   } catch (error) {
     console.error("[Mode] Failed to trigger speech:", error);
+  }
+}
+
+function triggerBlockedPettingSpeech() {
+  if (!window.SPEECH_MESSAGES || !window.startTypewriter || !window.speechBox) {
+    console.log("[App] Speech system not available yet");
+    return;
+  }
+
+  try {
+    const blockedMessages = window.SPEECH_MESSAGES?.pet_blocked_night;
+
+    if (
+      !blockedMessages ||
+      !Array.isArray(blockedMessages) ||
+      blockedMessages.length === 0
+    ) {
+      console.log("[App] No blocked petting messages available");
+      return;
+    }
+
+    const randomMessage =
+      blockedMessages[Math.floor(Math.random() * blockedMessages.length)];
+    console.log(`[App] Triggering blocked petting speech: "${randomMessage}"`);
+    window.startTypewriter(window.speechBox, randomMessage);
+  } catch (error) {
+    console.error("[App] Failed to trigger blocked petting speech:", error);
   }
 }
 

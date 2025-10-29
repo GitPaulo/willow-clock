@@ -9,6 +9,10 @@ pet:
   - "More pets please!"
   - "I love attention!"
 
+pet_blocked_night:
+  - "Shhh! Don't disturb her!"
+  - "Not now, it's bedtime!"
+
 music:
   - "I can hear the music too!"
   - "This beat is catchy!"

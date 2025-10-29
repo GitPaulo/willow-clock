@@ -34,7 +34,7 @@ const SPRITE_CONFIG = {
     frameHeight: 120,
     speed: 0.15,
     loop: true,
-    scale: 2.2,
+    scale: 1.6,
   },
   music: {
     path: "./assets/animations/sprite_music.png",

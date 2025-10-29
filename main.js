@@ -12,7 +12,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function getSettingsPath() {
-  const home = process.env.HOME || process.env.USERPROFILE || process.env.HOMEPATH;
+  const home =
+    process.env.HOME || process.env.USERPROFILE || process.env.HOMEPATH;
   return path.join(home, ".willow-clock", "settings.json");
 }
 

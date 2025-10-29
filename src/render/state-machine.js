@@ -1,3 +1,5 @@
+import { isDayTime } from "../util/utils.js";
+
 const STATES = {
   DAY: "day",
   NIGHT: "night",
@@ -47,9 +49,7 @@ function changeState(newState) {
 
 // Update day/night based on current time
 export function updateDayNightState(dayStart = 6, dayEnd = 18) {
-  const hours = new Date().getHours();
-  const newState =
-    hours >= dayStart && hours < dayEnd ? STATES.DAY : STATES.NIGHT;
+  const newState = isDayTime(dayStart, dayEnd) ? STATES.DAY : STATES.NIGHT;
 
   // If in temporary state (music/pet), update the previous state instead
   if (isTemporaryState(state.current)) {
