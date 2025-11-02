@@ -56,6 +56,13 @@ const SPRITE_CONFIG = {
   },
 };
 
+// Renderer constants
+const DEFAULT_CONTAINER_WIDTH = 340;
+const DEFAULT_CONTAINER_HEIGHT = 220;
+const READING_TIME_BASE_MS = 2000;
+const READING_TIME_PER_WORD_MS = 550;
+const FPS_UPDATE_INTERVAL_MS = 1000;
+
 // Speech config
 const SPEECH_CONFIG = {
   width: 320,
@@ -68,12 +75,12 @@ const SPEECH_CONFIG = {
   bottomMargin: 20,
   textStyle: {
     fontFamily: "PencilFont, Arial",
-    fontSize: 16,
+    fontSize: 18,
     fill: 0xffffff,
     align: "left",
     wordWrap: true,
     wordWrapWidth: 296,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   typewriterSpeed: 50,
   soundEnabled: true,
@@ -174,7 +181,6 @@ function repositionSprites(sprites, x, y) {
   for (const s of Object.values(sprites)) s.position.set(x, y);
 }
 
-// Speech box
 function createSpeechBox(x, y) {
   const box = new Container();
   const bg = new Graphics()
@@ -235,9 +241,13 @@ function startTypewriter(box, text) {
     clearInterval(data.interval);
     data.active = false;
 
-    // Calculate reading time: min 2 seconds, +550ms per word
-    const words = Math.max(2, data.full.trim().split(/\s+/).length);
-    const readingTime = Math.max(2000, words * 550);
+    // Calculate reading time based on word count
+    const minWords = 2;
+    const words = Math.max(minWords, data.full.trim().split(/\s+/).length);
+    const readingTime = Math.max(
+      READING_TIME_BASE_MS,
+      words * READING_TIME_PER_WORD_MS,
+    );
 
     setTimeout(() => {
       if (!data.active) box.visible = false;
@@ -245,7 +255,6 @@ function startTypewriter(box, text) {
   }, SPEECH_CONFIG.typewriterSpeed);
 }
 
-// UI info update
 function updateStateInfo(s) {
   const el = document.getElementById("state-info");
   if (el) el.innerText = s;
@@ -256,14 +265,13 @@ function updateFPSInfo(f) {
   if (el) el.innerText = f;
 }
 
-// Init
 async function initPixi() {
   const container = document.getElementById("pixi-container");
   if (!container) return createFallbackAnimation();
 
   const rect = container.getBoundingClientRect();
-  const width = Math.max(Math.floor(rect.width) || 340, 340);
-  const height = Math.max(Math.floor(rect.height) || 220, 220);
+  const width = Math.floor(rect.width) || DEFAULT_CONTAINER_WIDTH;
+  const height = Math.floor(rect.height) || DEFAULT_CONTAINER_HEIGHT;
 
   const app = new Application();
   await app.init({
@@ -339,8 +347,10 @@ async function initPixi() {
 
     frames++;
     const now = performance.now();
-    if (now >= last + 1000) {
-      updateFPSInfo(Math.round((frames * 1000) / (now - last)));
+    if (now >= last + FPS_UPDATE_INTERVAL_MS) {
+      updateFPSInfo(
+        Math.round((frames * FPS_UPDATE_INTERVAL_MS) / (now - last)),
+      );
       frames = 0;
       last = now;
     }

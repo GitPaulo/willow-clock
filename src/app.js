@@ -14,6 +14,7 @@ import {
   initializeState,
   triggerPet,
   setMusicActive,
+  getCurrentState,
 } from "./render/state-machine.js";
 import { getCurrentWeather } from "./weather/weather.js";
 import {
@@ -342,10 +343,7 @@ function switchMode() {
 
   if (nextModeName === MODE.FOCUS) startFocusTimer();
 
-  // Trigger speech for mode change if enabled
-  if (getSetting("modeChangeSpeech", true)) {
-    triggerModeSpeech(nextModeName, "switch");
-  }
+  triggerModeSpeech(nextModeName, "switch");
 }
 
 // -------------------------------------------------------------------------------------
@@ -458,17 +456,19 @@ function setupTimer() {
     timerInputElement.value = formatTime(timerRemainingTime);
   };
 
+  const updateLockState = (locked) => {
+    isTimerLocked = locked;
+    timerInputElement.readOnly = locked;
+    lockToggleButton.textContent = locked ? "Unlock" : "Lock";
+    lockToggleButton.title = locked
+      ? "Click to unlock timer for editing"
+      : "Click to lock timer";
+    startButton.disabled = !locked;
+    stopButton.disabled = !locked;
+  };
+
   lockToggleButton.addEventListener("click", () => {
-    isTimerLocked = !isTimerLocked;
-    timerInputElement.readOnly = isTimerLocked;
-    lockToggleButton.textContent = isTimerLocked ? "Unlock" : "Lock";
-    lockToggleButton.title = `Click to ${isTimerLocked ? "unlock" : "lock"} timer ${
-      isTimerLocked ? "for editing" : ""
-    }`;
-
-    startButton.disabled = !isTimerLocked;
-    stopButton.disabled = !isTimerLocked;
-
+    updateLockState(!isTimerLocked);
     if (!isTimerLocked) setTimeout(() => timerInputElement.focus(), 100);
   });
 
@@ -484,14 +484,11 @@ function setupTimer() {
     if (timerRemainingTime <= 0) return;
 
     const wasLocked = isTimerLocked;
-    isTimerLocked = true;
-    timerInputElement.readOnly = true;
-    lockToggleButton.textContent = "Unlock";
+    updateLockState(true);
     lockToggleButton.disabled = true;
+    timerInputElement.classList.add("running");
 
-    if (getSetting("modeChangeSpeech", true)) {
-      triggerModeSpeech("timer", "start");
-    }
+    triggerModeSpeech("timer", "start");
 
     timerIntervalId = setInterval(() => {
       timerRemainingTime -= 1000;
@@ -499,15 +496,11 @@ function setupTimer() {
       if (timerRemainingTime <= 0) {
         clearInterval(timerIntervalId);
         timerIntervalId = null;
-        isTimerLocked = wasLocked;
-        timerInputElement.readOnly = isTimerLocked;
-        lockToggleButton.textContent = isTimerLocked ? "Unlock" : "Lock";
+        updateLockState(wasLocked);
         lockToggleButton.disabled = false;
+        timerInputElement.classList.remove("running");
 
-        // Trigger completion speech
-        if (getSetting("modeChangeSpeech", true)) {
-          triggerModeSpeech("timer", "complete");
-        }
+        triggerModeSpeech("timer", "complete");
 
         // Flash the timer display (synced with audio duration)
         flashElement(timerInputElement, 6000);
@@ -529,9 +522,8 @@ function setupTimer() {
     clearInterval(timerIntervalId);
     timerIntervalId = null;
     lockToggleButton.disabled = false;
-    if (getSetting("modeChangeSpeech", true)) {
-      triggerModeSpeech("timer", "stop");
-    }
+    timerInputElement.classList.remove("running");
+    triggerModeSpeech("timer", "stop");
   });
 }
 
@@ -546,9 +538,7 @@ function startFocusTimer() {
   focusElapsedTime = 0;
   updateFocusDisplay();
 
-  if (getSetting("modeChangeSpeech", true)) {
-    triggerModeSpeech("focus", "start");
-  }
+  triggerModeSpeech("focus", "start");
 
   const FOCUS_UPDATE_INTERVAL = 1000;
   focusIntervalId = setInterval(() => {
@@ -561,9 +551,7 @@ function stopFocusTimer() {
   if (focusIntervalId) {
     clearInterval(focusIntervalId);
     focusIntervalId = null;
-    if (getSetting("modeChangeSpeech", true)) {
-      triggerModeSpeech("focus", "stop");
-    }
+    triggerModeSpeech("focus", "stop");
   }
 }
 
@@ -634,36 +622,40 @@ function setupSettings() {
   // Load settings into UI
   function loadSettingsUI() {
     const settings = getSettings();
-    if (elements["setting-audio-on-start"])
-      elements["setting-audio-on-start"].checked = settings.audioOnStart;
-    if (elements["setting-timer-alarm"])
-      elements["setting-timer-alarm"].checked = settings.timerAlarmSound;
-    if (elements["setting-cursor-trail"])
-      elements["setting-cursor-trail"].checked = settings.cursorTrailEnabled;
-    if (elements["setting-debug-mode"])
-      elements["setting-debug-mode"].checked = settings.debugMode;
-    if (elements["setting-mode-change-speech"])
-      elements["setting-mode-change-speech"].checked =
-        settings.modeChangeSpeech;
-    if (elements["setting-weather-frequency"])
-      elements["setting-weather-frequency"].value =
-        settings.weatherUpdateFrequency / 60000;
-    if (elements["setting-temperature-unit"])
-      elements["setting-temperature-unit"].value = settings.temperatureUnit;
-    if (elements["setting-day-start"])
-      elements["setting-day-start"].value =
-        settings.dayNightTransitionHours.start;
-    if (elements["setting-day-end"])
-      elements["setting-day-end"].value = settings.dayNightTransitionHours.end;
-    if (elements["setting-hardware-acceleration"])
-      elements["setting-hardware-acceleration"].checked =
-        settings.hardwareAcceleration;
-    if (elements["setting-fps-target"])
-      elements["setting-fps-target"].value = settings.fpsTarget;
-    if (elements["setting-clock-format"])
-      elements["setting-clock-format"].value = settings.clockFormat24Hour
-        ? "24"
-        : "12";
+
+    // Helper to safely set element values
+    const setElement = (id, value, property = "checked") => {
+      if (elements[id]) elements[id][property] = value;
+    };
+
+    setElement("setting-audio-on-start", settings.audioOnStart);
+    setElement("setting-timer-alarm", settings.timerAlarmSound);
+    setElement("setting-cursor-trail", settings.cursorTrailEnabled);
+    setElement("setting-debug-mode", settings.debugMode);
+    setElement("setting-mode-change-speech", settings.modeChangeSpeech);
+    setElement(
+      "setting-weather-frequency",
+      settings.weatherUpdateFrequency / 60000,
+      "value",
+    );
+    setElement("setting-temperature-unit", settings.temperatureUnit, "value");
+    setElement(
+      "setting-day-start",
+      settings.dayNightTransitionHours.start,
+      "value",
+    );
+    setElement(
+      "setting-day-end",
+      settings.dayNightTransitionHours.end,
+      "value",
+    );
+    setElement("setting-hardware-acceleration", settings.hardwareAcceleration);
+    setElement("setting-fps-target", settings.fpsTarget, "value");
+    setElement(
+      "setting-clock-format",
+      settings.clockFormat24Hour ? "24" : "12",
+      "value",
+    );
   }
 
   // Save settings from UI
@@ -909,6 +901,12 @@ function triggerWeatherSpeech(condition) {
 }
 
 function triggerModeSpeech(modeName, event = "switch") {
+  // Early return if speech is disabled or system is not ready
+  if (!getSetting("modeChangeSpeech", true)) return;
+  if (getCurrentState() === "night") {
+    console.log("[Mode] Speech blocked - night state");
+    return;
+  }
   if (!window.SPEECH_MESSAGES || !window.startTypewriter || !window.speechBox) {
     console.log("[Mode] Speech system not available yet");
     return;
@@ -916,26 +914,15 @@ function triggerModeSpeech(modeName, event = "switch") {
 
   try {
     const modeMessages = window.SPEECH_MESSAGES?.modes;
-
     if (!modeMessages || typeof modeMessages !== "object") {
       console.log("[Mode] No mode messages available");
       return;
     }
 
-    // Map MODE enum values to message keys
-    // "clock-mode" -> "clock", "stopwatch" -> "stopwatch", etc.
     const modeKey = modeName === "clock-mode" ? "clock" : modeName;
-    const modeData = modeMessages[modeKey];
+    const messages = modeMessages[modeKey]?.[event];
 
-    if (!modeData || typeof modeData !== "object") {
-      console.log(`[Mode] No speech data found for mode: ${modeKey}`);
-      return;
-    }
-
-    // Get messages for the specific event (e.g., "switch", "start", "stop")
-    const messages = modeData[event];
-
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    if (!Array.isArray(messages) || messages.length === 0) {
       console.log(`[Mode] No speech messages found for ${modeKey}.${event}`);
       return;
     }
