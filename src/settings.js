@@ -1,6 +1,7 @@
 const DEFAULT_SETTINGS = {
   // Audio settings
   audioOnStart: true,
+  audioDetectionEnabled: true,
   timerAlarmSound: true,
 
   // Visual settings

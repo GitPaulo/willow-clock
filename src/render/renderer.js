@@ -43,7 +43,7 @@ const SPRITE_CONFIG = {
     frameHeight: 125,
     speed: 0.15,
     loop: true,
-    scale: 1.8,
+    scale: 1.6,
   },
   pet: {
     path: "./assets/animations/sprite_pet.png",
@@ -226,6 +226,9 @@ function startTypewriter(box, text) {
   data.active = true;
   box.visible = true;
 
+  // Pause audio detection during speech
+  if (window.pauseAudioDetection) window.pauseAudioDetection();
+
   data.interval = setInterval(() => {
     if (data.idx < data.full.length) {
       const ch = data.full[data.idx++];
@@ -250,7 +253,11 @@ function startTypewriter(box, text) {
     );
 
     setTimeout(() => {
-      if (!data.active) box.visible = false;
+      if (!data.active) {
+        box.visible = false;
+        // Resume audio detection after speech completes
+        if (window.resumeAudioDetection) window.resumeAudioDetection();
+      }
     }, readingTime);
   }, SPEECH_CONFIG.typewriterSpeed);
 }

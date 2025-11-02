@@ -15,27 +15,26 @@ const EXECUTABLES = {
 };
 
 /**
- * Check if music is currently playing on the system
- * Filters out our own Electron app to avoid detecting background music
+ * Check if external music is currently playing on the system
+ * Filters out our own Electron app to avoid detecting app's background music
  * @returns {Promise<boolean>} True if any external media is playing
  */
 export async function isMusicPlaying() {
   try {
     const { playing, sources } = await getMediaState();
 
-    if (!playing || !sources || sources.length === 0) {
-      return false;
-    }
+    if (!playing) return false;
 
-    // Filter out chromium instances (our own Electron app)
+    // macOS Swift: No source tracking, trust audio device state
+    if (!sources || sources.length === 0) return playing;
+
+    // Windows/Linux: Filter out our own Electron app (chromium instances)
     const externalSources = sources.filter(
       (source) => !/chromium\.instance\d+/.test(source),
     );
 
-    // If no external sources remain, no external music is playing
     return externalSources.length > 0;
   } catch {
-    // Fail silently - return false if detection fails
     return false;
   }
 }

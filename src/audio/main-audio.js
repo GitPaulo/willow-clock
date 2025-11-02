@@ -1,7 +1,7 @@
 import { isMusicPlaying } from "./media-api.js";
 
-const MUSIC_CHECK_INTERVAL_MS = 3000; // Poll every 3 seconds
-const INITIAL_CHECK_DELAY_MS = 1000; // Wait 1 second for window to be ready
+const MUSIC_CHECK_INTERVAL_MS = 1000; // Poll every second for responsive detection
+const INITIAL_CHECK_DELAY_MS = 500; // Quick initial check
 
 let musicCheckInterval = null;
 let mainWindow = null;
@@ -17,37 +17,28 @@ export function initSystemAudio(window) {
 
   console.log("[MainAudio] Starting music detection...");
 
-  // Clear any existing interval
   if (musicCheckInterval) {
     clearInterval(musicCheckInterval);
   }
 
-  // Start polling for music state
-  musicCheckInterval = setInterval(async () => {
-    if (!isActive || !mainWindow) return;
+  musicCheckInterval = setInterval(
+    () => checkAndBroadcastMusicState(),
+    MUSIC_CHECK_INTERVAL_MS,
+  );
 
-    try {
-      const isPlaying = await isMusicPlaying();
+  // Initial check after short delay
+  setTimeout(() => checkAndBroadcastMusicState(), INITIAL_CHECK_DELAY_MS);
+}
 
-      // Send the music status to the renderer process
-      mainWindow.webContents.send("music-status-changed", isPlaying);
-    } catch (error) {
-      console.warn("[MainAudio] Music detection error:", error.message);
-    }
-  }, MUSIC_CHECK_INTERVAL_MS);
+async function checkAndBroadcastMusicState() {
+  if (!isActive || !mainWindow) return;
 
-  // Initial check
-  setTimeout(async () => {
-    if (!isActive || !mainWindow) return;
-
-    try {
-      const isPlaying = await isMusicPlaying();
-      mainWindow.webContents.send("music-status-changed", isPlaying);
-      console.log("[MainAudio] Music detection initialized");
-    } catch (error) {
-      console.warn("[MainAudio] Initial music check failed:", error.message);
-    }
-  }, INITIAL_CHECK_DELAY_MS);
+  try {
+    const isPlaying = await isMusicPlaying();
+    mainWindow.webContents.send("music-status-changed", isPlaying);
+  } catch (error) {
+    console.warn("[MainAudio] Music detection error:", error.message);
+  }
 }
 
 /**

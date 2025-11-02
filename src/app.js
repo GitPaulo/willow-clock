@@ -179,53 +179,77 @@ function setupBackgroundMusic() {
 
     volumeIcon.className = isMuted ? "fas fa-volume-mute" : "fas fa-volume-up";
     audioToggle.title = `${isMuted ? "Unmute" : "Mute"} background music`;
+
+    if (isMuted) {
+      startAudioDetection();
+    } else {
+      stopAudioDetection();
+      // Exit music state when app music is turned on
+      setMusicActive(false);
+    }
   });
 }
 
 async function startBackgroundMusic() {
   if (!backgroundMusic) return;
 
-  // Check if audio should auto-play based on settings
   const audioOnStart = getSetting("audioOnStart", true);
 
   if (!audioOnStart) {
     console.log("[App] Auto-play disabled by settings");
     isMuted = true;
     backgroundMusic.muted = true;
+    startAudioDetection();
     return;
   }
 
   try {
-    // Set volume before playing to prevent crackling
     backgroundMusic.volume = 0.08;
     await backgroundMusic.play();
+    stopAudioDetection();
   } catch (error) {
     console.log("[App] Auto-play blocked:", error.message);
+    isMuted = true;
+    backgroundMusic.muted = true;
+    startAudioDetection();
   }
 }
 
 function setupAudioDetection() {
-  console.log("[App] Setting up audio detection...");
+  if (typeof window.audioAPI === "undefined") return;
 
-  // Check if audioAPI is available (in Electron environment)
-  if (typeof window.audioAPI !== "undefined") {
-    // Start audio detection in main process
-    window.audioAPI
-      .startAudio()
-      .then(() => {
-        console.log("[App] Audio detection started");
-      })
-      .catch((error) => {
-        console.warn("[App] Failed to start audio detection:", error);
-      });
+  window.audioAPI.onMusicStatusChanged((isPlaying) => {
+    console.log("[App] Music status changed:", isPlaying);
+    setMusicActive(isPlaying);
+  });
 
-    // Listen for music status changes from main process
-    window.audioAPI.onMusicStatusChanged((isPlaying) => {
-      console.log("[App] Music status changed:", isPlaying);
-      setMusicActive(isPlaying);
-    });
-  } else {
-    console.warn("[App] audioAPI not available - running in browser mode");
+  // Expose for speech system
+  window.pauseAudioDetection = stopAudioDetection;
+  window.resumeAudioDetection = () => {
+    if (isMuted) startAudioDetection();
+  };
+}
+
+async function startAudioDetection() {
+  if (typeof window.audioAPI === "undefined") return;
+  if (!getSetting("audioDetectionEnabled", false)) return;
+
+  try {
+    await window.audioAPI.startAudio();
+    console.log("[App] Audio detection started");
+  } catch (error) {
+    console.warn("[App] Failed to start audio detection:", error);
+  }
+}
+
+async function stopAudioDetection() {
+  if (typeof window.audioAPI === "undefined") return;
+
+  try {
+    await window.audioAPI.stopAudio();
+    console.log("[App] Audio detection stopped");
+  } catch (error) {
+    console.warn("[App] Failed to stop audio detection:", error);
   }
 }
 
@@ -624,6 +648,7 @@ function setupSettings() {
     "settings-save",
     "settings-reset",
     "setting-audio-on-start",
+    "setting-audio-detection",
     "setting-timer-alarm",
     "setting-cursor-trail",
     "setting-debug-mode",
@@ -659,6 +684,7 @@ function setupSettings() {
     };
 
     setElement("setting-audio-on-start", settings.audioOnStart);
+    setElement("setting-audio-detection", settings.audioDetectionEnabled);
     setElement("setting-timer-alarm", settings.timerAlarmSound);
     setElement("setting-cursor-trail", settings.cursorTrailEnabled);
     setElement("setting-debug-mode", settings.debugMode);
@@ -693,6 +719,8 @@ function setupSettings() {
     const oldSettings = getSettings();
     const newSettings = {
       audioOnStart: elements["setting-audio-on-start"]?.checked ?? true,
+      audioDetectionEnabled:
+        elements["setting-audio-detection"]?.checked ?? false,
       timerAlarmSound: elements["setting-timer-alarm"]?.checked ?? true,
       cursorTrailEnabled: elements["setting-cursor-trail"]?.checked ?? true,
       debugMode: elements["setting-debug-mode"]?.checked ?? false,
@@ -885,7 +913,13 @@ function handlePetAttempt() {
     return;
   }
 
-  // Allow petting during day time
+  // Block petting during music state
+  const currentState = getCurrentState();
+  if (currentState === "music") {
+    console.log("[App] Petting blocked - music is playing");
+    return;
+  }
+
   triggerPet();
 }
 
