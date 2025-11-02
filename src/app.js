@@ -37,6 +37,7 @@ let timerIntervalId = null;
 let timerRemainingTime = 0;
 let focusIntervalId = null;
 let focusElapsedTime = 0;
+let lastFocusTime = 0;
 let cursorTrailInstance = null;
 let backgroundMusic = null;
 let timerAlarmAudio = null;
@@ -257,6 +258,7 @@ function setupModeSystem() {
     "timer-input",
     "focus-title",
     "focus-time",
+    "focus-last",
   ];
   const allElements = getElements(elementIds);
   const {
@@ -551,6 +553,8 @@ function stopFocusTimer() {
   if (focusIntervalId) {
     clearInterval(focusIntervalId);
     focusIntervalId = null;
+    lastFocusTime = focusElapsedTime;
+    updateLastFocusDisplay();
     triggerModeSpeech("focus", "stop");
   }
 }
@@ -560,6 +564,32 @@ function updateFocusDisplay() {
   if (focusTimeDisplayElement) {
     focusTimeDisplayElement.textContent = formatTime(focusElapsedTime);
   }
+}
+
+function updateLastFocusDisplay() {
+  const lastFocusElement = document.getElementById("focus-last");
+  if (!lastFocusElement) return;
+
+  if (lastFocusTime === 0) {
+    lastFocusElement.textContent = "Last focus: -";
+    return;
+  }
+
+  const totalSeconds = Math.floor(lastFocusTime / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  let timeStr;
+  if (hours > 0) {
+    timeStr = `${hours}h`;
+  } else if (minutes > 0) {
+    timeStr = `${minutes}min`;
+  } else {
+    timeStr = `${seconds}s`;
+  }
+
+  lastFocusElement.textContent = `Last focus: ${timeStr}`;
 }
 
 // -------------------------------------------------------------------------------------

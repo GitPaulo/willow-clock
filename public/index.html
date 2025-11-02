@@ -221,6 +221,22 @@
         0 0 25px rgba(255, 255, 255, 0.15);
     }
 
+    #focus-last {
+      font-family: "PencilFont", Arial, sans-serif;
+      font-size: clamp(14px, 4vw, 20px);
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.6);
+      text-align: center;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      margin-top: 4px;
+      line-height: 1.2;
+      transition: all 0.3s ease;
+    }
+
+    #focus-last.hover {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
     /* Stopwatch time display */
     #stopwatch-time {
       font-family:
@@ -981,6 +997,7 @@
       <div id="focus">
         <div id="focus-title">Focus!</div>
         <div id="focus-time">00:00:00</div>
+        <div id="focus-last">Last focus: -</div>
       </div>
     </div>
     <div id="pixi-container"></div>
