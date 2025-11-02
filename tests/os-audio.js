@@ -8,6 +8,7 @@ const ROOT = path.resolve("./src/audio/lib");
 // platform-specific targets
 const WINDOWS_MEDIA_STATE = path.resolve("./bin/MediaState.exe");
 const LINUX_MEDIA_STATE = path.join(ROOT, "linux", "media-state.js");
+const MACOS_MEDIA_STATE = path.join(ROOT, "macos", "media-state.js");
 
 async function getMediaStateWindows() {
   return new Promise((resolve) => {
@@ -98,10 +99,41 @@ async function getMediaStateLinux() {
   });
 }
 
+async function getMediaStateMacOS() {
+  return new Promise((resolve) => {
+    console.debug("[macos] Starting media state check...");
+
+    const timeout = setTimeout(() => {
+      console.error("[macos] timeout after 10 seconds");
+      resolve({ playing: false, sources: [] });
+    }, 10000); // 10 second timeout
+
+    execFile("node", [MACOS_MEDIA_STATE], (err, stdout, stderr) => {
+      clearTimeout(timeout);
+
+      if (err) {
+        console.error("[macos] error:", err.message);
+        resolve({ playing: false, sources: [] });
+        return;
+      }
+      if (stderr) console.error("[macos] stderr:", stderr.trim());
+      try {
+        const result = JSON.parse(stdout);
+        console.debug("[macos] success:", result);
+        resolve(result);
+      } catch (e) {
+        console.error("[macos] parse error:", e.message);
+        resolve({ playing: false, sources: [] });
+      }
+    });
+  });
+}
+
 async function getMediaState() {
   const platform = os.platform();
   if (platform === "win32") return await getMediaStateWindows();
   if (platform === "linux") return await getMediaStateLinux();
+  if (platform === "darwin") return await getMediaStateMacOS();
   throw new Error("Unsupported platform: " + platform);
 }
 

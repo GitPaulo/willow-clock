@@ -5,10 +5,13 @@ import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
 
+const MEDIA_STATE_TIMEOUT_MS = 5000; // 5 second timeout for external processes
+
 // Platform-specific executables bundled with the app
 const EXECUTABLES = {
   win32: resolve("./bin/MediaState.exe"),
   linux: resolve("./src/audio/lib/linux/media-state.js"),
+  darwin: resolve("./src/audio/lib/macos/media-state.js"),
 };
 
 /**
@@ -50,13 +53,14 @@ async function getMediaState() {
     throw new Error(`Unsupported platform: ${currentPlatform}`);
   }
 
-  const isLinux = currentPlatform === "linux";
-  const command = isLinux ? "node" : executable;
-  const args = isLinux ? [executable] : [];
+  const isUnixLike =
+    currentPlatform === "linux" || currentPlatform === "darwin";
+  const command = isUnixLike ? "node" : executable;
+  const args = isUnixLike ? [executable] : [];
 
   try {
     const { stdout } = await execFileAsync(command, args, {
-      timeout: 5000,
+      timeout: MEDIA_STATE_TIMEOUT_MS,
       encoding: "utf8",
     });
 

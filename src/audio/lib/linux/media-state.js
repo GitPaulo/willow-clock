@@ -47,8 +47,8 @@ async function getMediaState() {
         // ignore unresponsive players
       }
     }
-  } catch (err) {
-    result.error = err.message;
+  } catch {
+    // Fail silently, return default state
   } finally {
     // Close the D-Bus connection to allow the process to exit
     bus.disconnect();

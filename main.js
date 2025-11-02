@@ -2,11 +2,7 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs/promises";
-import {
-  initSystemAudio,
-  stopSystemAudio,
-  toggleSystemAudio,
-} from "./src/audio/main-audio.js";
+import { initSystemAudio, stopSystemAudio } from "./src/audio/main-audio.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,7 +80,6 @@ function createWindow() {
 
 function registerIPC(mainWindow) {
   ipcMain.handle("start-audio-detection", () => initSystemAudio(mainWindow));
-  ipcMain.handle("toggle-audio-detection", () => toggleSystemAudio());
   ipcMain.handle("stop-audio-detection", () => stopSystemAudio());
 
   ipcMain.handle("settings:load", async () => {

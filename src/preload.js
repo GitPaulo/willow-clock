@@ -4,7 +4,6 @@ import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld("audioAPI", {
   startAudio: () => ipcRenderer.invoke("start-audio-detection"),
-  toggleAudio: () => ipcRenderer.invoke("toggle-audio-detection"),
   stopAudio: () => ipcRenderer.invoke("stop-audio-detection"),
   onMusicStatusChanged: (callback) => {
     // Remove any existing listeners to prevent duplicates

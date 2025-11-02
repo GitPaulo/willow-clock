@@ -1,5 +1,8 @@
 import { isMusicPlaying } from "./media-api.js";
 
+const MUSIC_CHECK_INTERVAL_MS = 3000; // Poll every 3 seconds
+const INITIAL_CHECK_DELAY_MS = 1000; // Wait 1 second for window to be ready
+
 let musicCheckInterval = null;
 let mainWindow = null;
 let isActive = false;
@@ -19,7 +22,7 @@ export function initSystemAudio(window) {
     clearInterval(musicCheckInterval);
   }
 
-  // Start polling for music state every 3 seconds
+  // Start polling for music state
   musicCheckInterval = setInterval(async () => {
     if (!isActive || !mainWindow) return;
 
@@ -31,7 +34,7 @@ export function initSystemAudio(window) {
     } catch (error) {
       console.warn("[MainAudio] Music detection error:", error.message);
     }
-  }, 3000);
+  }, MUSIC_CHECK_INTERVAL_MS);
 
   // Initial check
   setTimeout(async () => {
@@ -44,7 +47,7 @@ export function initSystemAudio(window) {
     } catch (error) {
       console.warn("[MainAudio] Initial music check failed:", error.message);
     }
-  }, 1000); // Wait 1 second for window to be ready
+  }, INITIAL_CHECK_DELAY_MS);
 }
 
 /**
@@ -60,19 +63,4 @@ export function stopSystemAudio() {
   }
 
   mainWindow = null;
-}
-
-/**
- * Toggle system audio detection on/off
- */
-export function toggleSystemAudio() {
-  if (isActive) {
-    console.log("[MainAudio] Pausing music detection");
-    isActive = false;
-  } else {
-    console.log("[MainAudio] Resuming music detection");
-    isActive = true;
-  }
-
-  return isActive;
 }
