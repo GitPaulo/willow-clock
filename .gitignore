@@ -145,3 +145,6 @@ vite.config.ts.timestamp-*
 
 # Build artifacts
 bin/
+
+# Compiled macOS Swift binary
+src/audio/lib/macos/is-playing-audio

@@ -3,12 +3,7 @@ import prettier from "eslint-plugin-prettier/recommended";
 
 export default [
   {
-    ignores: [
-      "dist",
-      "build",
-      "public/pixi.js",
-      "src/audio/lib/macos/media-check.js",
-    ],
+    ignores: ["dist", "build", "public/pixi.js"],
   },
   js.configs.recommended,
   prettier,

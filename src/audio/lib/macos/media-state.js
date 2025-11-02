@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// macOS media state detection using JXA (JavaScript for Automation)
-// Outputs JSON: {"playing":true,"sources":["Music","Spotify"]}
+// macOS media state detection using CoreAudio API via Swift
+// Outputs JSON: {"playing":true,"sources":[]}
 
 import { execFile } from "child_process";
 import { promisify } from "util";
@@ -11,24 +11,20 @@ const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const JXA_TIMEOUT_MS = 3000; // 3 second timeout for JXA execution
+const SWIFT_TIMEOUT_MS = 3000; // 3 second timeout for Swift execution
 
 async function getMediaState() {
   const result = { playing: false, sources: [] };
 
   try {
-    // Path to the JXA (JavaScript for Automation) script file
-    const scriptPath = join(__dirname, "media-check.js");
+    // Path to the compiled Swift executable
+    const executablePath = join(__dirname, "is-playing-audio");
 
-    // Execute JXA script with timeout
-    const { stdout } = await execFileAsync(
-      "osascript",
-      ["-l", "JavaScript", scriptPath],
-      {
-        timeout: JXA_TIMEOUT_MS,
-        encoding: "utf8",
-      },
-    );
+    // Execute Swift binary with timeout
+    const { stdout } = await execFileAsync(executablePath, [], {
+      timeout: SWIFT_TIMEOUT_MS,
+      encoding: "utf8",
+    });
 
     // Parse JSON output
     const parsed = JSON.parse(stdout.trim());
