@@ -71,17 +71,26 @@ function createWindow() {
     if (platform === "darwin") win.focus();
   });
 
-  if (!app.isPackaged) win.webContents.openDevTools({ mode: "detach" });
-
-  registerIPC(win);
+  if (!app.isPackaged) {
+    win.webContents.openDevTools({ mode: "detach" });
+  }
 
   return win;
 }
 
-function registerIPC(mainWindow) {
-  ipcMain.handle("start-audio-detection", () => initSystemAudio(mainWindow));
+// -------------------------------------------------------------------------------------
+// IPC Handlers (registered once at startup)
+// -------------------------------------------------------------------------------------
+function registerIPCHandlers() {
+  // Audio detection
+  ipcMain.handle("start-audio-detection", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    return initSystemAudio(win);
+  });
+
   ipcMain.handle("stop-audio-detection", () => stopSystemAudio());
 
+  // Settings management
   ipcMain.handle("settings:load", async () => {
     try {
       const data = await fs.readFile(getSettingsPath(), "utf-8");
@@ -93,9 +102,9 @@ function registerIPC(mainWindow) {
 
   ipcMain.handle("settings:save", async (_, settings) => {
     try {
-      const file = getSettingsPath();
-      await fs.mkdir(path.dirname(file), { recursive: true });
-      await fs.writeFile(file, JSON.stringify(settings, null, 2));
+      const settingsPath = getSettingsPath();
+      await fs.mkdir(path.dirname(settingsPath), { recursive: true });
+      await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2));
       return true;
     } catch (err) {
       console.error("[Main] Failed to save settings:", err);
@@ -103,36 +112,46 @@ function registerIPC(mainWindow) {
     }
   });
 
-  ipcMain.on("window:minimize", (e) => {
-    const win = BrowserWindow.fromWebContents(e.sender);
-    win?.minimize();
+  // Window controls
+  ipcMain.on("window:minimize", (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.minimize();
   });
 
-  ipcMain.on("window:close", (e) => {
-    const win = BrowserWindow.fromWebContents(e.sender);
-    win?.close();
+  ipcMain.on("window:close", (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.close();
   });
 
-  ipcMain.on("window:maximize", (e) => {
-    const win = BrowserWindow.fromWebContents(e.sender);
-    if (win) win.isMaximized() ? win.unmaximize() : win.maximize();
+  ipcMain.on("window:maximize", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      win.isMaximized() ? win.unmaximize() : win.maximize();
+    }
   });
 }
 
-// App lifecycle
+// -------------------------------------------------------------------------------------
+// App Lifecycle
+// -------------------------------------------------------------------------------------
 applyHardwareAccelerationSetting();
 
 app.whenReady().then(() => {
-  // Audio and render stability
+  // Audio and render stability switches
   app.commandLine.appendSwitch("--disable-background-timer-throttling");
   app.commandLine.appendSwitch("--disable-backgrounding-occluded-windows");
   app.commandLine.appendSwitch("--disable-renderer-backgrounding");
   app.commandLine.appendSwitch("--autoplay-policy", "no-user-gesture-required");
 
+  // Register IPC handlers once
+  registerIPCHandlers();
+
+  // Create initial window
   createWindow();
 
+  // macOS: recreate window when dock icon is clicked
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
   });
 });
 
