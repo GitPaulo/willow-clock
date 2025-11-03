@@ -15,6 +15,7 @@ import {
   triggerPet,
   setMusicActive,
   getCurrentState,
+  onStateChange,
 } from "./render/state-machine.js";
 import { getCurrentWeather } from "./weather/weather.js";
 import {
@@ -223,6 +224,17 @@ function setupAudioDetection() {
     setMusicActive(isPlaying);
   });
 
+  // Listen for state changes to manage audio detection during bedtime
+  onStateChange((newState) => {
+    if (newState === "night") {
+      console.log("[App] Entering bedtime - stopping audio detection");
+      stopAudioDetection();
+    } else if (newState === "day" && isMuted) {
+      console.log("[App] Exiting bedtime - starting audio detection");
+      startAudioDetection();
+    }
+  });
+
   // Expose for speech system
   window.pauseAudioDetection = stopAudioDetection;
   window.resumeAudioDetection = () => {
@@ -233,6 +245,13 @@ function setupAudioDetection() {
 async function startAudioDetection() {
   if (typeof window.audioAPI === "undefined") return;
   if (!getSetting("audioDetectionEnabled", false)) return;
+
+  // Don't start audio detection during bedtime (night state)
+  const currentState = getCurrentState();
+  if (currentState === "night") {
+    console.log("[App] Audio detection disabled during bedtime");
+    return;
+  }
 
   try {
     await window.audioAPI.startAudio();
@@ -397,8 +416,8 @@ function setupStopwatch() {
     const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}:${seconds
-        .toString()
-        .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
+      .toString()
+      .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
     timeDisplayElement.textContent = formattedTime;
   };
 

@@ -24,10 +24,12 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
-    "@nodert-win10-20h1/windows.media.control": "^0.1.0",
     "dbus-next": "^0.10.2",
     "js-yaml": "^4.1.0",
     "pixi.js": "^8.8.1"
+  },
+  "optionalDependencies": {
+    "@nodert-win10-20h1/windows.media.control": "^0.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
@@ -44,6 +46,7 @@
     "directories": {
       "output": "dist"
     },
+    "beforeBuild": "scripts/before-build.js",
     "files": [
       "main.js",
       "public/**/*",
@@ -51,7 +54,7 @@
       "bin/**/*",
       "node_modules/**/*"
     ],
-    "icon": "public/assets/icons/app-icon.png",
+    "icon": "public/assets/icons/app-icon-512.png",
     "mac": {
       "category": "public.app-category.utilities",
       "target": [

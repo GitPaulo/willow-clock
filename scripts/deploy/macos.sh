@@ -8,6 +8,14 @@ echo ""
 echo "Preparing dependencies..."
 npm run prebuild
 
+# Compile Swift audio detection binary
+echo "Compiling Swift audio detection binary..."
+cd src/audio/lib/macos
+swiftc is-playing-audio.swift -o is-playing-audio
+cd ../../../..
+echo "Swift binary compiled successfully."
+echo ""
+
 # Build for macOS
 echo "Building macOS packages (x64 and arm64)..."
 npx electron-builder --mac
