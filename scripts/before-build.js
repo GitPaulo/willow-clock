@@ -1,11 +1,12 @@
 /**
  * Pre-build hook for electron-builder
  * Removes platform-specific dependencies on non-matching platforms
+ * Copies required assets (PixiJS and FontAwesome) to public directory
  */
 
 import { platform } from "os";
-import { existsSync } from "fs";
-import { rm } from "fs/promises";
+import { existsSync, mkdirSync, copyFileSync } from "fs";
+import { rm, cp } from "fs/promises";
 import { resolve } from "path";
 
 export default async function beforeBuild() {
@@ -24,6 +25,43 @@ export default async function beforeBuild() {
       await rm(windowsModulePath, { recursive: true, force: true });
       console.log("Windows module removed successfully.");
     }
+  }
+
+  // Copy PixiJS
+  const pixiSrc = resolve("./node_modules/pixi.js/dist/pixi.mjs");
+  const pixiDest = resolve("./public/pixi.js");
+
+  if (existsSync(pixiSrc) && !existsSync(pixiDest)) {
+    console.log("Copying PixiJS...");
+    copyFileSync(pixiSrc, pixiDest);
+    console.log("✓ PixiJS copied to public/pixi.js");
+  }
+
+  // Copy FontAwesome
+  const fontawesomeSrc = resolve(
+    "./node_modules/@fortawesome/fontawesome-free",
+  );
+  const fontawesomeDest = resolve("./public/fontawesome");
+
+  if (existsSync(fontawesomeSrc) && !existsSync(fontawesomeDest)) {
+    console.log("Copying FontAwesome assets...");
+
+    mkdirSync(fontawesomeDest, { recursive: true });
+
+    await cp(resolve(fontawesomeSrc, "css"), resolve(fontawesomeDest, "css"), {
+      recursive: true,
+      force: true,
+    });
+    await cp(
+      resolve(fontawesomeSrc, "webfonts"),
+      resolve(fontawesomeDest, "webfonts"),
+      {
+        recursive: true,
+        force: true,
+      },
+    );
+
+    console.log("✓ FontAwesome assets copied to public/fontawesome");
   }
 
   console.log("Pre-build checks complete.");

@@ -151,3 +151,7 @@ bin/
 
 # Compiled macOS Swift binary
 src/audio/lib/macos/is-playing-audio
+
+# Generated assets (copied from node_modules during prebuild)
+public/pixi.js
+public/fontawesome/
