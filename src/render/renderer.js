@@ -98,10 +98,9 @@ async function loadSpeechMessages() {
     SPEECH_MESSAGES = parseYAML(await res.text());
   } catch {
     SPEECH_MESSAGES = {
-      greeting: ["Hello there!"],
-      pet: ["That tickles!"],
-      music: ["I can hear the music too!"],
-      time: ["Time keeps flowing..."],
+      pet: ["I think something went wrong... oh no!"],
+      music: ["I think something went wrong... oh no!"],
+      time: ["I think something went wrong... oh no!"],
     };
   }
 }

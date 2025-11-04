@@ -24,6 +24,7 @@ import {
   getSettings,
   getSetting,
   resetSettings,
+  updateSettings,
 } from "./settings.js";
 import { setupTestFunctions } from "./util/test-functions.js";
 import { initRenderer, onSpriteClick, updateFPS } from "./render/renderer.js";
@@ -431,8 +432,8 @@ function setupStopwatch() {
     const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
+        .toString()
+        .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
     timeDisplayElement.textContent = formattedTime;
   };
 
@@ -702,6 +703,7 @@ function setupSettings() {
     "close-settings",
     "settings-save",
     "settings-reset",
+    "settings-credits",
     "setting-audio-on-start",
     "setting-audio-detection",
     "setting-timer-alarm",
@@ -866,6 +868,37 @@ function setupSettings() {
       console.log("[Settings] Reset to defaults");
     }
   });
+
+  const creditsBtn = elements["settings-credits"];
+  creditsBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openCreditsModal();
+  });
+}
+
+function openCreditsModal() {
+  const creditsModal = document.getElementById("credits-modal");
+  const closeCreditsBtn = document.getElementById("close-credits");
+  const creditsBackdrop = document.querySelector(".credits-backdrop");
+
+  if (!creditsModal) return;
+
+  creditsModal.classList.remove("hidden");
+
+  closeCreditsBtn?.addEventListener("click", () => {
+    creditsModal.classList.add("hidden");
+  });
+
+  creditsBackdrop?.addEventListener("click", () => {
+    creditsModal.classList.add("hidden");
+  });
+
+  document.addEventListener("keydown", function handleEscape(e) {
+    if (e.key === "Escape" && !creditsModal.classList.contains("hidden")) {
+      creditsModal.classList.add("hidden");
+      document.removeEventListener("keydown", handleEscape);
+    }
+  });
 }
 
 // -------------------------------------------------------------------------------------
@@ -979,6 +1012,34 @@ function handlePetAttempt() {
   }
 
   triggerPet();
+  incrementPetCount();
+}
+
+async function incrementPetCount() {
+  const currentCount = getSetting("petCount", 0);
+  const newCount = currentCount + 1;
+
+  await updateSettings({ petCount: newCount });
+  console.log(`[App] Pet count: ${newCount}`);
+
+  // Check for milestones
+  const milestones = [10, 100, 1000, 10000];
+  if (milestones.includes(newCount)) {
+    triggerPetMilestone(newCount);
+  }
+}
+
+function triggerPetMilestone(count) {
+  if (!window.getRandomSpeech || !window.startTypewriter || !window.speechBox) {
+    return;
+  }
+
+  const milestone = `pet_milestone_${count}`;
+  const message = window.getRandomSpeech(milestone);
+  if (message) {
+    console.log(`[App] Pet milestone reached: ${count}`);
+    window.startTypewriter(window.speechBox, message);
+  }
 }
 
 // -------------------------------------------------------------------------------------

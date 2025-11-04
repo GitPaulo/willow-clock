@@ -3,7 +3,7 @@ const STORAGE_KEY = "willow-clock-settings";
 const DEFAULT_SETTINGS = {
   // Audio Settings
   audioOnStart: true,
-  audioDetectionEnabled: true,
+  audioDetectionEnabled: false, // TODO: when fixed add it in
   timerAlarmSound: true,
 
   // Visual Settings
@@ -14,6 +14,9 @@ const DEFAULT_SETTINGS = {
   // Speech Settings
   modeChangeSpeech: true,
   textSoundEnabled: true,
+
+  // Stats
+  petCount: 0,
 
   // Weather Settings
   weatherUpdateFrequency: 120000,

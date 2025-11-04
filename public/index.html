@@ -741,6 +741,147 @@
       border-color: #ff7a00;
     }
 
+    /* Credits Modal */
+    #credits-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      transition: opacity 0.3s ease;
+    }
+
+    #credits-modal.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .credits-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .credits-panel {
+      position: relative;
+      background: #2c2a2f;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(1);
+      transition: transform 0.3s ease;
+    }
+
+    #credits-modal.hidden .credits-panel {
+      transform: scale(0.9);
+    }
+
+    .credits-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .credits-header h2 {
+      font-family: "PencilFont", "PawFont", Arial, sans-serif;
+      font-size: 28px;
+      color: white;
+      margin: 0;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .close-credits-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      -webkit-app-region: no-drag;
+    }
+
+    .close-credits-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    .close-credits-btn:active {
+      transform: scale(0.95);
+    }
+
+    .credits-content {
+      padding: 24px;
+      color: rgba(255, 255, 255, 0.9);
+      font-family: "PencilFont", Arial, sans-serif;
+      text-align: center;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .credits-intro {
+      font-size: 18px;
+      margin: 0 0 24px 0;
+      color: white;
+    }
+
+    .credits-cats {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .credits-cat {
+      flex: 1;
+      min-width: 200px;
+      max-width: 250px;
+    }
+
+    .credits-cat img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s ease;
+    }
+
+    .credits-cat img:hover {
+      transform: scale(1.05);
+    }
+
+    .credits-cat h3 {
+      font-family: "PencilFont", "PawFont", Arial, sans-serif;
+      font-size: 22px;
+      color: #ff921e;
+      margin: 12px 0 0 0;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
     /* Cursor Trail Paw Prints */
     .cursor-trail-container {
       position: fixed;
@@ -1131,6 +1272,9 @@
 
           <!-- Actions -->
           <div class="settings-actions">
+            <button id="settings-credits" class="settings-btn">
+              Credits
+            </button>
             <button id="settings-reset" class="settings-btn">
               Reset to Defaults
             </button>
@@ -1139,6 +1283,33 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Credits Modal -->
+  <div id="credits-modal" class="hidden">
+    <div class="credits-backdrop"></div>
+    <div class="credits-panel">
+      <div class="credits-header">
+        <h2>Credits</h2>
+        <button id="close-credits" class="close-credits-btn" title="Close credits">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="credits-content">
+        <p class="credits-intro">Time passes by but memories last forever, credits to:</p>
+        <div class="credits-cats">
+          <div class="credits-cat">
+            <img src="./assets/images/credits_willow.png" alt="Willow" />
+            <h3>Willow</h3>
+          </div>
+          <div class="credits-cat">
+            <img src="./assets/images/credits_wynter.jpg" alt="Wynter" />
+            <h3>Wynter & Myself</h3>
+          </div>
+        </div>
+        <p class="credits-intro">Hope you enjoyed the gift Anna!</p>
       </div>
     </div>
   </div>

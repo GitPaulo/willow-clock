@@ -1,163 +1,168 @@
-greeting:
-  - "Hello there! Nice to see you!"
-  - "Good to have you here!"
-  - "Welcome back, friend!"
-
 pet:
-  - "That tickles!"
-  - "Hehe, that feels nice!"
-  - "More pets please!"
-  - "I love attention!"
+  - "That tickles, nya!"
+  - "I love attention, nyah!"
+  - "Don't stop, nyaa~!"
+
+pet_milestone_10:
+  - "That's 10 pets! Thank you, nyaa~"
+
+pet_milestone_100:
+  - "100 pets!! You really like me, nya!"
+
+pet_milestone_1000:
+  - "One thousand pets!! I'm so happy, nya~!!"
+
+pet_milestone_10000:
+  - "TEN THOUSAND pets!! I love you so much, nya!! ♥"
 
 pet_blocked_night:
-  - "Shhh! Don't disturb her!"
-  - "Not now, it's bedtime!"
+  - "Shhh, don't disturb her, nya!"
+  - "Not now, it's bedtime, nya!"
+  - "...Zzz... nya..."
 
 music:
-  - "I can hear the music too!"
-  - "This beat is catchy!"
-  - "Music makes everything better!"
+  - "Wynter and I love music, nyaa!"
+  - "We can hear the music too, nya!"
 
 shake:
-  - "Stop shaking me!"
-  - "Hey! I'm getting dizzy!"
-  - "Whoa whoa, take it easy!"
+  - "Stop shaking me, nya!"
+  - "Hey, I'm getting dizzy, nyaa!"
+  - "Nyaa~ s-stop shaking!!"
 
 time:
-  - "Time keeps flowing..."
-  - "Another moment passes by."
-  - "Tick tock, tick tock..."
+  - "Time keeps flowing, nya..."
+  - "Another moment passes by, nya."
+  - "Tick tock, tick tock, nya..."
 
 modes:
   clock:
     switch:
-      - "Time to check the time!"
-      - "Back to the clock!"
+      - "Time to check the time, nya!"
+      - "Back to the clock, nyaa!"
   stopwatch:
     switch:
-      - "This is a stopwatch! :3"
-      - "Ready to time something?"
+      - "This is a stopwatch, nya!"
+      - "Ready to time something, nyaa?"
     start:
-      - "Starting the stopwatch!"
-      - "And... go!"
+      - "Starting the stopwatch, nya!"
+      - "And... go, nyaa!"
     pause:
-      - "Stopwatch paused!"
-      - "Taking a break from timing."
+      - "Stopwatch paused, nya!"
+      - "Taking a break from timing, nya."
     reset:
-      - "Stopwatch reset!"
-      - "Back to zero!"
+      - "Stopwatch reset, nya!"
+      - "Back to zero, nyaa!"
   timer:
     switch:
-      - "Ooo, setting a timer for something?"
-      - "Timer mode activated!"
+      - "Ooo, setting a timer, nya?"
+      - "Timer mode activated, nyaa!"
     start:
-      - "Timer started!"
-      - "Counting down now!"
-      - "Let's see when this goes off!"
+      - "Timer started, nya!"
+      - "Counting down now, nyaa!"
     stop:
-      - "Timer stopped!"
-      - "Countdown halted."
+      - "Timer stopped, nya!"
+      - "Countdown halted, nyaa."
     complete:
-      - "Time's up!"
-      - "Timer finished!"
-      - "That's all the time!"
+      - "Time's up, nya!"
+      - "Timer finished, nyaa!"
+      - "That's all the time, nya!"
   focus:
     switch:
-      - "Time to get things done! Focus!"
-      - "Let's concentrate!"
+      - "Time to get things done, focus nya!"
+      - "Let's concentrate, nyaa!"
     start:
-      - "Focus mode activated!"
-      - "Time to concentrate!"
+      - "Focus mode activated, nya!"
+      - "Time to concentrate, nyaa!"
     stop:
-      - "Focus session ended!"
-      - "Good work!"
+      - "Focus session ended, nya!"
+      - "Good work, nyaa!"
     checkpoint_1min:
-      - "1 minute down! Keep going!"
-      - "You're doing great! 1 minute in!"
+      - "Nya~ 1 minute down! Keep going!"
+      - "You're doing great, nya! 1 minute in!"
     checkpoint_5min:
-      - "5 minutes of focus! Nice work!"
-      - "5 minutes done! Stay focused!"
+      - "5 minutes of focus, nya! Nice work!"
+      - "5 minutes done, nya! Stay focused!"
     checkpoint_15min:
-      - "15 minutes! You're on a roll!"
-      - "Quarter hour milestone reached!"
+      - "15 minutes, nya! You're on a roll!"
+      - "Quarter hour milestone reached, nya!"
     checkpoint_30min:
-      - "30 minutes! Halfway to an hour!"
-      - "Half an hour of pure focus!"
+      - "30 minutes, nya! Halfway to an hour!"
+      - "Half an hour of pure focus, nya!"
     checkpoint_1h:
-      - "1 hour of focus! Incredible!"
-      - "You've been focused for a full hour!"
+      - "1 hour of focus, nya! Incredible!"
+      - "You've been focused for a full hour, nya!"
 
 weather:
   Clear:
-    - "What a beautiful clear day!"
-    - "The sky is so clear and bright!"
-    - "Perfect weather for anything!"
+    - "What a beautiful clear day, nyaa!"
+    - "The sky is so clear and bright, nya!"
+    - "Perfect weather for anything, nya!"
   MostlyClear:
-    - "It's looking mostly clear out there!"
-    - "Just a few clouds today!"
+    - "It's looking mostly clear, nya!"
+    - "Just a few clouds today, nyaa!"
   PartlyCloudy:
-    - "Some clouds are rolling in."
-    - "It's getting a bit cloudy."
-    - "Partly cloudy skies ahead!"
+    - "Some clouds are rolling in, nya."
+    - "It's getting a bit cloudy, nyaa."
+    - "Partly cloudy skies ahead, nya!"
   Overcast:
-    - "The sky is completely overcast."
-    - "Gray clouds everywhere today."
-    - "No sun to be seen!"
+    - "The sky is completely overcast, nya."
+    - "Gray clouds everywhere today, nyaa."
+    - "No sun to be seen, nya!"
   Fog:
-    - "It's getting quite foggy out there."
-    - "Visibility is really low today."
-    - "Watch out for the thick fog!"
+    - "It's getting quite foggy, nya."
+    - "Visibility is really low today, nyaa."
+    - "Watch out for the thick fog, nya!"
   FreezingFog:
-    - "Freezing fog is making things icy!"
-    - "Be careful, it's foggy and freezing!"
+    - "Freezing fog makes things icy, nya!"
+    - "Be careful, it's foggy and freezing, nyaa!"
   LightDrizzle:
-    - "A light drizzle is starting."
-    - "Just a gentle mist falling."
+    - "A light drizzle is starting, nya."
+    - "Just a gentle mist falling, nyaa."
   Drizzle:
-    - "It's drizzling outside."
-    - "Light rain is falling."
+    - "It's drizzling outside, nya."
+    - "Light rain is falling, nyaa."
   HeavyDrizzle:
-    - "The drizzle is getting heavier."
-    - "Steady light rain now."
+    - "The drizzle is getting heavier, nya."
+    - "Steady light rain now, nyaa."
   LightRain:
-    - "Light rain is beginning to fall."
-    - "Just a gentle shower."
+    - "Light rain is beginning to fall, nya."
+    - "Just a gentle shower, nyaa."
   Rain:
-    - "It's raining now!"
-    - "Time to grab an umbrella!"
-    - "Rain is falling steadily."
+    - "It's raining now, nya!"
+    - "Time to grab an umbrella, nyaa!"
+    - "Rain is falling steadily, nya."
   HeavyRain:
-    - "Heavy rain is pouring down!"
-    - "It's really coming down out there!"
-    - "What a downpour!"
+    - "Heavy rain is pouring down, nya!"
+    - "It's really coming down out there, nyaa!"
+    - "What a downpour, nya!"
   LightSnow:
-    - "Light snow is starting to fall!"
-    - "Gentle snowflakes are drifting down."
+    - "Light snow is starting to fall, nya!"
+    - "Gentle snowflakes drifting down, nyaa."
   Snow:
-    - "It's snowing!"
-    - "Snow is falling steadily."
-    - "Winter wonderland time!"
+    - "It's snowing, nya!"
+    - "Snow is falling steadily, nyaa."
+    - "Winter wonderland time, nya!"
   HeavySnow:
-    - "Heavy snow is coming down!"
-    - "It's a real snowstorm out there!"
-    - "Lots of snow falling!"
+    - "Heavy snow is coming down, nya!"
+    - "A real snowstorm out there, nyaa!"
+    - "Lots of snow falling, nya!"
   RainShowers:
-    - "Rain showers are passing through."
-    - "Expect some scattered showers."
+    - "Rain showers are passing through, nya."
+    - "Expect some scattered showers, nyaa."
   HeavyShowers:
-    - "Heavy showers are moving in!"
-    - "Intense rain showers ahead!"
+    - "Heavy showers are moving in, nya!"
+    - "Intense rain showers ahead, nyaa!"
   ViolentRain:
-    - "Violent rain is hammering down!"
-    - "Extreme rainfall right now!"
+    - "Violent rain is hammering down, nya!"
+    - "Extreme rainfall right now, nyaa!"
   Thunderstorm:
-    - "Thunder and lightning outside!"
-    - "A thunderstorm is brewing!"
-    - "Nature's light show is starting!"
+    - "Thunder and lightning outside, nya!"
+    - "A thunderstorm is brewing, nyaa!"
+    - "Nature's light show is starting, nya!"
   ThunderstormHail:
-    - "Thunderstorm with hail!"
-    - "Take cover, hail is falling!"
-    - "Thunder, lightning, and hail!"
+    - "Thunderstorm with hail, nya!"
+    - "Take cover, hail is falling, nyaa!"
+    - "Thunder, lightning, and hail, nya!"
   Unknown:
-    - "The weather is a mystery today."
-    - "I can't tell what the weather is like."
+    - "The weather is a mystery today, nya."
+    - "I can't tell what the weather is like, nyaa."
