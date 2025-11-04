@@ -14,14 +14,12 @@ const STATE_CONFIGS = {
   [STATES.PET]: { speed: 0.08, color: 0x00ff88 },
 };
 
-// Current sprite state
 const state = {
-  current: STATES.DAY,
-  previousState: STATES.DAY,
+  current: null, // Will be set during initialization
+  previousState: null,
   listeners: [],
 };
 
-// Temporary states that return to previous state (music/pet)
 const isTemporaryState = (s) => s === STATES.MUSIC || s === STATES.PET;
 
 export function getCurrentState() {
@@ -36,49 +34,59 @@ export function onStateChange(callback) {
   state.listeners.push(callback);
 }
 
-function changeState(newState) {
-  if (state.current === newState) return;
+function notifyStateChange(newState, oldState) {
+  console.log(
+    `[StateMachine] ${oldState ? `${oldState} ->` : "Init:"} ${newState}`,
+  );
+  state.listeners.forEach((callback) => callback(newState));
+}
+
+function changeState(newState, force = false) {
+  if (!force && state.current === newState) return;
 
   const oldState = state.current;
   state.previousState = oldState;
   state.current = newState;
 
-  console.log(`[StateMachine] Transition: ${oldState} -> ${newState}`);
-  state.listeners.forEach((callback) => callback(newState));
+  notifyStateChange(newState, oldState);
 }
 
-// Update day/night based on current time
-export function updateDayNightState(dayStart = 6, dayEnd = 18) {
-  const newState = isDayTime(dayStart, dayEnd) ? STATES.DAY : STATES.NIGHT;
+// Initialize state machine with settings
+export function initializeState(dayStart = 6, dayEnd = 18) {
+  const initialState = isDayTime(dayStart, dayEnd) ? STATES.DAY : STATES.NIGHT;
+  changeState(initialState, true); // Force initial state change
+}
 
-  // If in temporary state (music/pet), update the previous state instead
+// Update day/night based on current time and settings
+export function updateDayNightState(dayStart = 6, dayEnd = 18) {
+  const desiredState = isDayTime(dayStart, dayEnd) ? STATES.DAY : STATES.NIGHT;
+
+  // If in temporary state, update the previous state instead
   if (isTemporaryState(state.current)) {
-    state.previousState = newState;
+    state.previousState = desiredState;
     return;
   }
 
-  changeState(newState);
+  changeState(desiredState);
 }
 
-// Trigger pet animation (temporary state)
+// Trigger pet animation
 export function triggerPet() {
-  // Save current state to return to later
   if (!isTemporaryState(state.current)) {
     state.previousState = state.current;
   }
   changeState(STATES.PET);
 }
 
-// Exit temporary state back to previous state
+// Exit temporary state
 export function exitTemporaryState() {
   if (!isTemporaryState(state.current)) return;
   changeState(state.previousState);
 }
 
-// Set music state active/inactive
+// Set music state
 export function setMusicActive(isActive) {
   if (isActive) {
-    // Save current state to return to later
     if (!isTemporaryState(state.current)) {
       state.previousState = state.current;
     }
@@ -86,9 +94,4 @@ export function setMusicActive(isActive) {
   } else if (state.current === STATES.MUSIC) {
     exitTemporaryState();
   }
-}
-
-// Initialize state machine
-export function initializeState() {
-  updateDayNightState();
 }

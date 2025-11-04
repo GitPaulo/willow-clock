@@ -777,6 +777,7 @@ function setupSettings() {
   async function saveSettingsUI() {
     const oldSettings = getSettings();
     const newSettings = {
+      ...oldSettings, // Preserve settings not in UI (like petCount)
       audioOnStart: elements["setting-audio-on-start"]?.checked ?? true,
       audioDetectionEnabled:
         elements["setting-audio-detection"]?.checked ?? false,
@@ -815,7 +816,7 @@ function setupSettings() {
 
   // Apply settings to running app
   function applySettings(settings) {
-    // Cursor trail
+    // Toggle cursor trail
     if (settings.cursorTrailEnabled && !cursorTrailInstance) {
       cursorTrailInstance = new CursorTrail();
       cursorTrailInstance.init();
@@ -824,13 +825,14 @@ function setupSettings() {
       cursorTrailInstance.destroy();
       cursorTrailInstance = null;
     }
-    // Debug mode
+
+    // Apply other settings
     applyDebugMode();
-    // Day/night transition
+    updateFPS(settings.fpsTarget);
+
+    // Update day/night state based on new transition hours
     const { start, end } = settings.dayNightTransitionHours;
     updateDayNightState(start, end);
-    // FPS target
-    updateFPS(settings.fpsTarget);
   }
 
   // Event handlers
@@ -1151,12 +1153,20 @@ function triggerBlockedPettingSpeech() {
 // Exports
 // -------------------------------------------------------------------------------------
 export function initializeApp() {
-  // Expose triggerWeatherSpeech globally for test functions
   window.triggerWeatherSpeech = triggerWeatherSpeech;
 
-  initializeState();
+  // Initialize state machine with settings
+  const { start, end } = getSetting("dayNightTransitionHours", {
+    start: 6,
+    end: 18,
+  });
+  initializeState(start, end);
+
+  // Update clock every second
   updateClock();
   setInterval(updateClock, 1000);
+
+  // Check day/night state every minute
   setInterval(() => {
     const { start, end } = getSetting("dayNightTransitionHours", {
       start: 6,

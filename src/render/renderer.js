@@ -360,8 +360,6 @@ async function initPixi() {
 
   await loadSpriteAssets();
   const sprites = createSprites(app, cx, cy);
-  showSprite(sprites, getCurrentState());
-
   const speechBox = createSpeechBox(
     cx,
     app.screen.height - SPEECH_CONFIG.height - SPEECH_CONFIG.bottomMargin,
