@@ -7,6 +7,7 @@ import {
   playTextBeep,
   initTextSound,
   getAudioState,
+  scheduleTypewriterBeeps,
 } from "../audio/text-audio.js";
 
 export function setupTestFunctions() {
@@ -39,6 +40,14 @@ export function setupTestFunctions() {
   window.testTextBeep = () => {
     initTextSound(); // Ensure audio is initialized
     playTextBeep();
+  };
+
+  window.testScheduledBeeps = (count = 10, interval = 50) => {
+    initTextSound();
+    console.log(`[Test] Scheduling ${count} beeps at ${interval}ms intervals`);
+    const controller = scheduleTypewriterBeeps(count, interval);
+    console.log("[Test] Beeps scheduled on AudioContext timeline");
+    return controller;
   };
 
   window.testAudioStatus = async () => {
@@ -80,6 +89,6 @@ export function setupTestFunctions() {
   };
 
   console.log(
-    "[App] Test functions available: testPet(), testMusic(), testSpeech('message'), testTextBeep(), testAudioStatus(), testWeatherChange('condition'), testAudioDetection()",
+    "[App] Test functions available: testPet(), testMusic(), testSpeech('message'), testTextBeep(), testScheduledBeeps(count, interval), testAudioStatus(), testWeatherChange('condition'), testAudioDetection()",
   );
 }

@@ -5,6 +5,10 @@ document.addEventListener("DOMContentLoaded", () => {
     window.windowControls.minimize();
   });
 
+  document.getElementById("max-btn").addEventListener("click", () => {
+    window.windowControls.maximize();
+  });
+
   document.getElementById("close-btn").addEventListener("click", () => {
     window.windowControls.close();
   });

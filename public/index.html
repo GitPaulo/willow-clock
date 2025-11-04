@@ -875,6 +875,7 @@
       -webkit-app-region: no-drag;
       background: none;
       border: none;
+      border-radius: 4px;
       color: rgba(255, 255, 255, 0.7);
       width: 28px;
       height: 28px;
@@ -956,6 +957,9 @@
     <div id="window-controls">
       <button id="min-btn" title="Minimize">
         <i class="fas fa-minus"></i>
+      </button>
+      <button id="max-btn" title="Maximize">
+        <i class="fas fa-square"></i>
       </button>
       <button id="close-btn" title="Close">
         <i class="fas fa-times"></i>
@@ -1052,6 +1056,10 @@
             <label class="setting-item">
               <input type="checkbox" id="setting-timer-alarm" />
               <span>Play sound when timer completes</span>
+            </label>
+            <label class="setting-item">
+              <input type="checkbox" id="setting-text-sound" />
+              <span>Play sound on text</span>
             </label>
           </div>
 

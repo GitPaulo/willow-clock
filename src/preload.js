@@ -8,7 +8,7 @@ contextBridge.exposeInMainWorld("audioAPI", {
   onMusicStatusChanged: (callback) => {
     // Remove any existing listeners to prevent duplicates
     ipcRenderer.removeAllListeners("music-status-changed");
-    ipcRenderer.on("music-status-changed", (event, isPlaying) => {
+    ipcRenderer.on("music-status-changed", (_, isPlaying) => {
       callback(isPlaying);
     });
   },
@@ -18,6 +18,10 @@ contextBridge.exposeInMainWorld("windowControls", {
   minimize: () => ipcRenderer.send("window:minimize"),
   maximize: () => ipcRenderer.send("window:maximize"),
   close: () => ipcRenderer.send("window:close"),
+  onShake: (callback) => {
+    ipcRenderer.removeAllListeners("window:shake-detected");
+    ipcRenderer.on("window:shake-detected", callback);
+  },
 });
 
 contextBridge.exposeInMainWorld("settingsAPI", {

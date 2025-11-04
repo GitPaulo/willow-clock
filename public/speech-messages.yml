@@ -18,6 +18,11 @@ music:
   - "This beat is catchy!"
   - "Music makes everything better!"
 
+shake:
+  - "Stop shaking me!"
+  - "Hey! I'm getting dizzy!"
+  - "Whoa whoa, take it easy!"
+
 time:
   - "Time keeps flowing..."
   - "Another moment passes by."
@@ -66,6 +71,21 @@ modes:
     stop:
       - "Focus session ended!"
       - "Good work!"
+    checkpoint_1min:
+      - "1 minute down! Keep going!"
+      - "You're doing great! 1 minute in!"
+    checkpoint_5min:
+      - "5 minutes of focus! Nice work!"
+      - "5 minutes done! Stay focused!"
+    checkpoint_15min:
+      - "15 minutes! You're on a roll!"
+      - "Quarter hour milestone reached!"
+    checkpoint_30min:
+      - "30 minutes! Halfway to an hour!"
+      - "Half an hour of pure focus!"
+    checkpoint_1h:
+      - "1 hour of focus! Incredible!"
+      - "You've been focused for a full hour!"
 
 weather:
   Clear:

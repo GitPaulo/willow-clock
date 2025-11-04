@@ -1,8 +1,40 @@
 // Text sound utility using Web Audio API
 // Provides typewriter-style sound effects for character-by-character text display
-
+// Uses pre-built audio buffers and AudioContext timeline scheduling for precise timing
 let audioCtx = null;
 let isInitialized = false;
+let clickBuffer = null;
+let softClickBuffer = null;
+
+/**
+ * Create a pre-built click sound buffer
+ * This is more efficient than creating oscillators per character
+ */
+function createClickBuffer(frequency, duration, volume, waveType = "square") {
+  const sampleRate = audioCtx.sampleRate;
+  const length = Math.ceil(sampleRate * duration);
+  const buffer = audioCtx.createBuffer(1, length, sampleRate);
+  const data = buffer.getChannelData(0);
+
+  // Generate waveform with exponential decay envelope
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    const envelope = Math.exp(-t / (duration / 3)); // Exponential decay
+    const phase = (2 * Math.PI * frequency * t) % (2 * Math.PI);
+
+    let sample;
+    if (waveType === "square") {
+      sample = phase < Math.PI ? 1 : -1;
+    } else {
+      // sine wave
+      sample = Math.sin(phase);
+    }
+
+    data[i] = sample * envelope * volume;
+  }
+
+  return buffer;
+}
 
 /**
  * Initialize the audio context for text sounds
@@ -13,80 +45,100 @@ export function initTextSound() {
 
   try {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Pre-build click buffers with slight frequency variation
+    // We'll add randomness when playing by selecting from variations
+    clickBuffer = createClickBuffer(280, 0.05, 0.12, "square");
+    softClickBuffer = createClickBuffer(450, 0.03, 0.08, "sine");
+
     isInitialized = true;
-    console.log("[TextAudio] AudioContext initialized");
+    console.log("[TextAudio] AudioContext initialized with pre-built buffers");
   } catch (error) {
     console.warn("[TextAudio] Failed to initialize AudioContext:", error);
   }
 }
 
 /**
- * Play a short beep sound for text typing effect
- * Includes slight frequency variation to avoid monotony
+ * Play a beep sound
+ * @param {AudioBuffer} buffer - The buffer to play
  */
-export function playTextBeep() {
-  if (!audioCtx || !isInitialized) return;
+function playBeep(buffer) {
+  if (!audioCtx || !isInitialized || !buffer) return;
 
   try {
-    const osc = audioCtx.createOscillator();
+    const source = audioCtx.createBufferSource();
     const gain = audioCtx.createGain();
 
-    // Small frequency variation (250-310 Hz) to avoid monotony
-    osc.frequency.value = 250 + Math.random() * 60;
-    osc.type = "square";
+    source.buffer = buffer;
+    source.playbackRate.value = 0.95 + Math.random() * 0.1;
+    gain.gain.value = 0.9 + Math.random() * 0.2;
 
-    // Very short blip with exponential decay
-    const now = audioCtx.currentTime;
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-
-    // Connect and play
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start(now);
-    osc.stop(now + 0.05);
-
-    // Cleanup after sound completes to prevent memory leaks
-    osc.onended = () => {
-      osc.disconnect();
-      gain.disconnect();
-    };
+    source.connect(gain);
+    gain.connect(audioCtx.destination);
+    source.start(audioCtx.currentTime);
   } catch (error) {
-    console.warn("[TextAudio] Error playing text beep:", error);
+    console.warn("[TextAudio] Error playing beep:", error);
   }
 }
 
 /**
+ * Play a short beep sound for text typing effect
+ */
+export function playTextBeep() {
+  playBeep(clickBuffer);
+}
+
+/**
  * Play a softer, more digital RPG-style beep
- * Alternative sound for different contexts
  */
 export function playTextBeepSoft() {
-  if (!audioCtx || !isInitialized) return;
+  playBeep(softClickBuffer);
+}
 
-  try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+/**
+ * Schedule a sequence of beeps for typewriter effect
+ * Uses AudioContext timeline scheduling to avoid drift
+ * @param {number} count - Number of beeps to schedule
+ * @param {number} intervalMs - Interval between beeps in milliseconds
+ * @returns {Object} - Control object with stop() method
+ */
+export function scheduleTypewriterBeeps(count, intervalMs) {
+  if (!audioCtx || !isInitialized) return { stop: () => {} };
 
-    // Higher frequency range for softer sound
-    osc.frequency.value = 400 + Math.random() * 100;
-    osc.type = "sine";
+  const intervalSec = intervalMs / 1000;
+  const startTime = audioCtx.currentTime + 0.01;
+  const sources = [];
 
-    // Softer volume and quicker decay
-    const now = audioCtx.currentTime;
-    gain.gain.setValueAtTime(0.08, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+  for (let i = 0; i < count; i++) {
+    try {
+      const source = audioCtx.createBufferSource();
+      const gain = audioCtx.createGain();
 
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start(now);
-    osc.stop(now + 0.03);
+      source.buffer = softClickBuffer;
+      source.playbackRate.value = 0.95 + Math.random() * 0.1;
+      gain.gain.value = 0.9 + Math.random() * 0.2;
 
-    // Cleanup after sound completes to prevent memory leaks
-    osc.onended = () => {
-      osc.disconnect();
-      gain.disconnect();
-    };
-  } catch (error) {
-    console.warn("[TextAudio] Error playing soft text beep:", error);
+      source.connect(gain);
+      gain.connect(audioCtx.destination);
+      source.start(startTime + i * intervalSec);
+      sources.push(source);
+    } catch (error) {
+      console.warn("[TextAudio] Error scheduling beep:", error);
+    }
   }
+
+  return {
+    stop: () => {
+      sources.forEach((source) => {
+        try {
+          source.stop();
+          source.disconnect();
+        } catch {
+          // Already stopped
+        }
+      });
+    },
+  };
 }
 
 /**

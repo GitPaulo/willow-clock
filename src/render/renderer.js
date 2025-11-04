@@ -10,7 +10,7 @@ import {
 } from "../../public/pixi.js";
 import { onStateChange, getCurrentState } from "./state-machine.js";
 import { parseYAML } from "../util/utils.js";
-import { playTextBeepSoft, initTextSound } from "../audio/text-audio.js";
+import { initTextSound, scheduleTypewriterBeeps } from "../audio/text-audio.js";
 import { getSetting } from "../settings.js";
 
 // Sprite sheet configuration
@@ -80,10 +80,10 @@ const SPEECH_CONFIG = {
     align: "left",
     wordWrap: true,
     wordWrapWidth: 296,
-    lineHeight: 22,
+    lineHeight: 26,
+    letterSpacing: 0.3,
   },
   typewriterSpeed: 50,
-  soundEnabled: true,
   get height() {
     return this.textStyle.lineHeight + this.padding * 2;
   },
@@ -120,6 +120,7 @@ let pixiApp = null;
 export function updateFPS(fps) {
   if (pixiApp && pixiApp.ticker) {
     pixiApp.ticker.maxFPS = fps;
+    pixiApp.ticker.minFPS = fps;
     console.log(`[Renderer] FPS target updated to: ${fps}`);
   }
 }
@@ -205,6 +206,7 @@ function createSpeechBox(x, y) {
     obj: txt,
     active: false,
     interval: null,
+    audioController: null, // For stopping scheduled audio
   };
 
   return box;
@@ -218,8 +220,11 @@ function getRandomSpeech(category) {
 
 function startTypewriter(box, text) {
   const data = box.typeData;
-  if (data.active) clearInterval(data.interval);
 
+  // Clean up existing session
+  stopTypewriter(data);
+
+  // Initialize new session
   data.full = text;
   data.idx = 0;
   data.obj.text = "";
@@ -229,37 +234,82 @@ function startTypewriter(box, text) {
   // Pause audio detection during speech
   if (window.pauseAudioDetection) window.pauseAudioDetection();
 
-  data.interval = setInterval(() => {
+  // Schedule audio beeps for typing effect
+  scheduleTypingAudio(data, text);
+
+  // Start animation loop
+  const startTime = performance.now();
+  const intervalMs = SPEECH_CONFIG.typewriterSpeed;
+
+  function typeNextChar(currentTime) {
+    if (!data.active) return;
+
+    // Calculate how many characters should be displayed by now
+    const elapsed = currentTime - startTime;
+    const targetIdx = Math.floor(elapsed / intervalMs);
+
+    // Add characters that should be visible (handles frame drops)
+    while (data.idx <= targetIdx && data.idx < data.full.length) {
+      data.obj.text += data.full[data.idx++];
+    }
+
+    // Continue animating if not complete
     if (data.idx < data.full.length) {
-      const ch = data.full[data.idx++];
-      data.obj.text += ch;
-      if (SPEECH_CONFIG.soundEnabled && ch !== " " && ch !== "\n") {
-        initTextSound();
-        playTextBeepSoft();
-      }
+      data.interval = requestAnimationFrame(typeNextChar);
       return;
     }
 
-    // Typing complete - clear interval and schedule hide
-    clearInterval(data.interval);
-    data.active = false;
+    // Typing complete - schedule hide after reading time
+    completeTypewriter(box, data, data.full);
+  }
 
-    // Calculate reading time based on word count
-    const minWords = 2;
-    const words = Math.max(minWords, data.full.trim().split(/\s+/).length);
-    const readingTime = Math.max(
-      READING_TIME_BASE_MS,
-      words * READING_TIME_PER_WORD_MS,
+  data.interval = requestAnimationFrame(typeNextChar);
+}
+
+function stopTypewriter(data) {
+  if (!data.active) return;
+
+  if (data.interval) cancelAnimationFrame(data.interval);
+  if (data.audioController) data.audioController.stop();
+
+  data.active = false;
+  data.interval = null;
+}
+
+function scheduleTypingAudio(data, text) {
+  if (!getSetting("textSoundEnabled", true)) return;
+
+  initTextSound();
+  const soundableChars = text
+    .split("")
+    .filter((ch) => ch !== " " && ch !== "\n").length;
+
+  if (soundableChars > 0) {
+    data.audioController = scheduleTypewriterBeeps(
+      soundableChars,
+      SPEECH_CONFIG.typewriterSpeed,
     );
+  }
+}
 
-    setTimeout(() => {
-      if (!data.active) {
-        box.visible = false;
-        // Resume audio detection after speech completes
-        if (window.resumeAudioDetection) window.resumeAudioDetection();
-      }
-    }, readingTime);
-  }, SPEECH_CONFIG.typewriterSpeed);
+function completeTypewriter(box, data, completedText) {
+  data.active = false;
+  data.interval = null;
+
+  // Calculate reading time based on word count
+  const words = Math.max(2, completedText.trim().split(/\s+/).length);
+  const readingTime = Math.max(
+    READING_TIME_BASE_MS,
+    words * READING_TIME_PER_WORD_MS,
+  );
+
+  // Hide message after reading time (only if not replaced by new message)
+  setTimeout(() => {
+    if (data.full === completedText && !data.active) {
+      box.visible = false;
+      if (window.resumeAudioDetection) window.resumeAudioDetection();
+    }
+  }, readingTime);
 }
 
 function updateStateInfo(s) {
@@ -292,7 +342,11 @@ async function initPixi() {
   pixiApp = app; // Store reference for dynamic updates
 
   const fpsTarget = getSetting("fpsTarget", 60);
-  if (app.ticker) app.ticker.maxFPS = fpsTarget;
+  if (app.ticker) {
+    app.ticker.maxFPS = fpsTarget;
+    app.ticker.minFPS = fpsTarget;
+    console.log(`[Renderer] FPS target set to: ${fpsTarget}`);
+  }
 
   container.appendChild(app.canvas);
   app.canvas.style.cursor = "pointer";

@@ -39,6 +39,7 @@ let timerRemainingTime = 0;
 let focusIntervalId = null;
 let focusElapsedTime = 0;
 let lastFocusTime = 0;
+let focusCheckpoints = new Set();
 let cursorTrailInstance = null;
 let backgroundMusic = null;
 let timerAlarmAudio = null;
@@ -60,6 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupBackgroundMusic();
   setupCursorTrail();
   setupAudioDetection();
+  setupShakeDetection();
   setupModeSystem();
   setupStopwatch();
   setupTimer();
@@ -272,6 +274,19 @@ async function stopAudioDetection() {
   }
 }
 
+function setupShakeDetection() {
+  if (typeof window.windowControls === "undefined") return;
+  if (typeof window.windowControls.onShake !== "function") return;
+
+  window.windowControls.onShake(() => {
+    console.log("[App] Window shake detected!");
+    if (window.getRandomSpeech && window.startTypewriter && window.speechBox) {
+      const message = window.getRandomSpeech("shake");
+      window.startTypewriter(window.speechBox, message);
+    }
+  });
+}
+
 // -------------------------------------------------------------------------------------
 // Visual Effects
 // -------------------------------------------------------------------------------------
@@ -416,8 +431,8 @@ function setupStopwatch() {
     const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}:${seconds
-        .toString()
-        .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
+      .toString()
+      .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
     timeDisplayElement.textContent = formattedTime;
   };
 
@@ -581,6 +596,7 @@ function setupFocus() {
 
 function startFocusTimer() {
   focusElapsedTime = 0;
+  focusCheckpoints.clear();
   updateFocusDisplay();
 
   triggerModeSpeech("focus", "start");
@@ -589,7 +605,27 @@ function startFocusTimer() {
   focusIntervalId = setInterval(() => {
     focusElapsedTime += FOCUS_UPDATE_INTERVAL;
     updateFocusDisplay();
+    checkFocusCheckpoints();
   }, FOCUS_UPDATE_INTERVAL);
+}
+
+function checkFocusCheckpoints() {
+  const minutes = Math.floor(focusElapsedTime / 60000);
+  const checkpoints = [
+    { time: 1, key: "checkpoint_1min" },
+    { time: 5, key: "checkpoint_5min" },
+    { time: 15, key: "checkpoint_15min" },
+    { time: 30, key: "checkpoint_30min" },
+    { time: 60, key: "checkpoint_1h" },
+  ];
+
+  for (const checkpoint of checkpoints) {
+    if (minutes === checkpoint.time && !focusCheckpoints.has(checkpoint.key)) {
+      focusCheckpoints.add(checkpoint.key);
+      triggerModeSpeech("focus", checkpoint.key);
+      break;
+    }
+  }
 }
 
 function stopFocusTimer() {
@@ -669,6 +705,7 @@ function setupSettings() {
     "setting-audio-on-start",
     "setting-audio-detection",
     "setting-timer-alarm",
+    "setting-text-sound",
     "setting-cursor-trail",
     "setting-debug-mode",
     "setting-mode-change-speech",
@@ -705,6 +742,7 @@ function setupSettings() {
     setElement("setting-audio-on-start", settings.audioOnStart);
     setElement("setting-audio-detection", settings.audioDetectionEnabled);
     setElement("setting-timer-alarm", settings.timerAlarmSound);
+    setElement("setting-text-sound", settings.textSoundEnabled);
     setElement("setting-cursor-trail", settings.cursorTrailEnabled);
     setElement("setting-debug-mode", settings.debugMode);
     setElement("setting-mode-change-speech", settings.modeChangeSpeech);
@@ -741,6 +779,7 @@ function setupSettings() {
       audioDetectionEnabled:
         elements["setting-audio-detection"]?.checked ?? false,
       timerAlarmSound: elements["setting-timer-alarm"]?.checked ?? true,
+      textSoundEnabled: elements["setting-text-sound"]?.checked ?? true,
       cursorTrailEnabled: elements["setting-cursor-trail"]?.checked ?? true,
       debugMode: elements["setting-debug-mode"]?.checked ?? false,
       modeChangeSpeech: elements["setting-mode-change-speech"]?.checked ?? true,
