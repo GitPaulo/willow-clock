@@ -1,22 +1,22 @@
+// External dependencies
 import {
+  AnimatedSprite,
   Application,
   Assets,
-  Texture,
-  Rectangle,
-  AnimatedSprite,
-  Text,
-  Graphics,
   Container,
+  Graphics,
+  Rectangle,
+  Text,
+  Texture,
 } from "../../public/pixi.js";
-import { onStateChange, getCurrentState } from "./state-machine.js";
-import { parseYAML } from "../util/utils.js";
+
+// Internal modules
 import { initTextSound, scheduleTypewriterBeeps } from "../audio/text-audio.js";
 import { getSetting } from "../settings.js";
+import { parseYAML } from "../util/utils.js";
+import { getCurrentState, onStateChange } from "./state-machine.js";
 
 // Sprite sheet configuration
-// speed: animation speed (0.05 = very slow, 0.3 = fast)
-// loop: true (continuous) or false (play once and hold last frame)
-// scale: sprite size multiplier (0.5 = half, 1.0 = original, 2.0 = double)
 const SPRITE_CONFIG = {
   day: {
     path: "./assets/animations/sprite_day.png",

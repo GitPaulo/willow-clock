@@ -1,16 +1,12 @@
+// Internal modules
+import { AUDIO_CONFIG } from "../constants.js";
 import { isMusicPlaying } from "./media-api.js";
-
-const MUSIC_CHECK_INTERVAL_MS = 1000; // Poll every second for responsive detection
-const INITIAL_CHECK_DELAY_MS = 500; // Quick initial check
 
 let musicCheckInterval = null;
 let mainWindow = null;
 let isActive = false;
 
-/**
- * Initialize system audio detection
- * @param {Electron.BrowserWindow} window - Main window instance
- */
+// Initialize system audio detection
 export function initSystemAudio(window) {
   mainWindow = window;
   isActive = true;
@@ -23,11 +19,14 @@ export function initSystemAudio(window) {
 
   musicCheckInterval = setInterval(
     () => checkAndBroadcastMusicState(),
-    MUSIC_CHECK_INTERVAL_MS,
+    AUDIO_CONFIG.MUSIC_CHECK_INTERVAL_MS,
   );
 
   // Initial check after short delay
-  setTimeout(() => checkAndBroadcastMusicState(), INITIAL_CHECK_DELAY_MS);
+  setTimeout(
+    () => checkAndBroadcastMusicState(),
+    AUDIO_CONFIG.INITIAL_CHECK_DELAY_MS,
+  );
 }
 
 async function checkAndBroadcastMusicState() {
@@ -35,16 +34,14 @@ async function checkAndBroadcastMusicState() {
 
   try {
     const isPlaying = await isMusicPlaying();
-    mainWindow.webContents.send("music-status-changed", isPlaying);
+    mainWindow.webContents.send("audio:status-changed", isPlaying);
   } catch (error) {
     console.warn("[MainAudio] Music detection error:", error.message);
   }
 }
 
-/**
- * Stop system audio detection
- */
-export function stopSystemAudio() {
+// Stop system audio detection
+export async function stopSystemAudio() {
   isActive = false;
 
   if (musicCheckInterval) {
@@ -52,6 +49,9 @@ export function stopSystemAudio() {
     musicCheckInterval = null;
     console.log("[MainAudio] Music detection stopped");
   }
+
+  // Wait a tick to ensure any in-flight checks complete
+  await new Promise((resolve) => setTimeout(resolve, 50));
 
   mainWindow = null;
 }

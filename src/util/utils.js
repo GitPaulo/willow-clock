@@ -1,11 +1,7 @@
-// Mode enum
-export const MODE = {
-  CLOCK: "clock-mode",
-  STOPWATCH: "stopwatch",
-  TIMER: "timer",
-  FOCUS: "focus",
-};
-export const MODES = Object.values(MODE);
+// Internal modules
+import { MODE, MODES } from "../renderer-constants.js";
+
+export { MODE, MODES };
 
 export function getElements(ids) {
   return ids.reduce(

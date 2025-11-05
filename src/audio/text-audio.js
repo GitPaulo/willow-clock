@@ -1,15 +1,10 @@
 // Text sound utility using Web Audio API
-// Provides typewriter-style sound effects for character-by-character text display
-// Uses pre-built audio buffers and AudioContext timeline scheduling for precise timing
 let audioCtx = null;
 let isInitialized = false;
 let clickBuffer = null;
 let softClickBuffer = null;
 
-/**
- * Create a pre-built click sound buffer
- * This is more efficient than creating oscillators per character
- */
+// Create a pre-built click sound buffer
 function createClickBuffer(frequency, duration, volume, waveType = "square") {
   const sampleRate = audioCtx.sampleRate;
   const length = Math.ceil(sampleRate * duration);
@@ -36,10 +31,8 @@ function createClickBuffer(frequency, duration, volume, waveType = "square") {
   return buffer;
 }
 
-/**
- * Initialize the audio context for text sounds
- * Must be called after a user gesture (click, etc.) due to browser autoplay policy
- */
+// Initialize the audio context for text sounds
+// Must be called after a user gesture due to browser autoplay policy
 export function initTextSound() {
   if (isInitialized) return;
 
@@ -58,10 +51,7 @@ export function initTextSound() {
   }
 }
 
-/**
- * Play a beep sound
- * @param {AudioBuffer} buffer - The buffer to play
- */
+// Play a beep sound
 function playBeep(buffer) {
   if (!audioCtx || !isInitialized || !buffer) return;
 
@@ -81,27 +71,18 @@ function playBeep(buffer) {
   }
 }
 
-/**
- * Play a short beep sound for text typing effect
- */
+// Play a short beep sound for text typing effect
 export function playTextBeep() {
   playBeep(clickBuffer);
 }
 
-/**
- * Play a softer, more digital RPG-style beep
- */
+// Play a softer, more digital RPG-style beep
 export function playTextBeepSoft() {
   playBeep(softClickBuffer);
 }
 
-/**
- * Schedule a sequence of beeps for typewriter effect
- * Uses AudioContext timeline scheduling to avoid drift
- * @param {number} count - Number of beeps to schedule
- * @param {number} intervalMs - Interval between beeps in milliseconds
- * @returns {Object} - Control object with stop() method
- */
+// Schedule a sequence of beeps for typewriter effect
+// Uses AudioContext timeline scheduling to avoid drift
 export function scheduleTypewriterBeeps(count, intervalMs) {
   if (!audioCtx || !isInitialized) return { stop: () => {} };
 
@@ -141,16 +122,12 @@ export function scheduleTypewriterBeeps(count, intervalMs) {
   };
 }
 
-/**
- * Check if text audio is ready to use
- */
+// Check if text audio is ready to use
 export function isTextAudioReady() {
   return isInitialized && audioCtx && audioCtx.state === "running";
 }
 
-/**
- * Get audio context state for debugging
- */
+// Get audio context state for debugging
 export function getAudioState() {
   return {
     initialized: isInitialized,

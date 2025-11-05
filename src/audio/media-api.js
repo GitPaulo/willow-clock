@@ -1,24 +1,22 @@
+// Node.js built-ins
 import { execFile } from "child_process";
 import { platform } from "os";
 import { resolve } from "path";
 import { promisify } from "util";
 
+// Internal modules
+import { AUDIO_CONFIG } from "../constants.js";
+
 const execFileAsync = promisify(execFile);
 
-const MEDIA_STATE_TIMEOUT_MS = 5000; // 5 second timeout for external processes
-
-// Platform-specific executables bundled with the app
 const EXECUTABLES = {
   win32: resolve("./bin/MediaState.exe"),
   linux: resolve("./src/audio/lib/linux/media-state.js"),
   darwin: resolve("./src/audio/lib/macos/media-state.js"),
 };
 
-/**
- * Check if external music is currently playing on the system
- * Filters out our own Electron app to avoid detecting app's background music
- * @returns {Promise<boolean>} True if any external media is playing
- */
+// Check if external music is currently playing on the system
+// Filters out our own Electron app to avoid detecting app's background music
 export async function isMusicPlaying() {
   try {
     const { playing, sources } = await getMediaState();
@@ -39,11 +37,7 @@ export async function isMusicPlaying() {
   }
 }
 
-/**
- * Get current system media state
- * @returns {Promise<{playing: boolean, sources: string[]}>}
- * @private
- */
+// Get current system media state
 async function getMediaState() {
   const currentPlatform = platform();
   const executable = EXECUTABLES[currentPlatform];
@@ -59,7 +53,7 @@ async function getMediaState() {
 
   try {
     const { stdout } = await execFileAsync(command, args, {
-      timeout: MEDIA_STATE_TIMEOUT_MS,
+      timeout: AUDIO_CONFIG.MEDIA_STATE_TIMEOUT_MS,
       encoding: "utf8",
     });
 

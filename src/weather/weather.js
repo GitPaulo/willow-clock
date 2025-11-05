@@ -18,22 +18,10 @@ const WEATHER_MAP = {
   81: "HeavyShowers",
   82: "ViolentRain",
   95: "Thunderstorm",
-  99: "ThunderstormHail",
 };
 
-/**
- * @typedef {keyof typeof WEATHER_MAP} WeatherState
- * @typedef {Object} WeatherInfo
- * @property {string} location - City name (approximate)
- * @property {WeatherState} condition - Simplified weather condition
- * @property {number|null} temperature - Degrees Celsius
- */
-
-/**
- * Fetch current weather using IP-based lookup.
- * Returns a simplified object with condition + temperature.
- * @returns {Promise<WeatherInfo>}
- */
+// Fetch current weather using IP-based lookup
+// Returns a simplified object with condition + temperature
 async function getCurrentWeather() {
   try {
     const ipRes = await fetch("https://ipapi.co/json/");

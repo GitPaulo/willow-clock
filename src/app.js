@@ -1,37 +1,44 @@
+// Internal modules - Effects
 import { CursorTrail } from "./effects/cursor-trail.js";
+
+// Internal modules - Rendering
+import { initRenderer, onSpriteClick, updateFPS } from "./render/renderer.js";
 import {
-  MODE,
-  MODES,
-  getElements,
-  toggleHoverStates,
-  formatTime,
-  isNightTime,
-  formatClockTime,
-  flashElement,
-} from "./util/utils.js";
-import {
-  updateDayNightState,
-  initializeState,
-  triggerPet,
-  setMusicActive,
   getCurrentState,
+  initializeState,
   onStateChange,
+  setMusicActive,
+  triggerPet,
+  updateDayNightState,
 } from "./render/state-machine.js";
-import { getCurrentWeather } from "./weather/weather.js";
+
+// Internal modules - Settings & Config
 import {
-  loadSettings,
-  saveSettings,
   getSettings,
   getSetting,
+  loadSettings,
   resetSettings,
+  saveSettings,
   updateSettings,
 } from "./settings.js";
-import { setupTestFunctions } from "./util/test-functions.js";
-import { initRenderer, onSpriteClick, updateFPS } from "./render/renderer.js";
 
-// -------------------------------------------------------------------------------------
+// Internal modules - Utilities
+import {
+  flashElement,
+  formatClockTime,
+  formatTime,
+  getElements,
+  isNightTime,
+  MODE,
+  MODES,
+  toggleHoverStates,
+} from "./util/utils.js";
+import { setupTestFunctions } from "./util/test-functions.js";
+
+// Internal modules - Weather
+import { getCurrentWeather } from "./weather/weather.js";
+
 // App State
-// -------------------------------------------------------------------------------------
 let activeModeIndex = 0;
 let stopwatchIntervalId = null;
 let stopwatchElapsedTime = 0;
@@ -49,9 +56,7 @@ let weatherData = null;
 let lastWeatherUpdate = 0;
 let previousWeatherCondition = null;
 
-// -------------------------------------------------------------------------------------
 // Bootstrap
-// -------------------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", async () => {
   await loadSettings();
 
@@ -71,11 +76,51 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupTestFunctions();
   applyDebugMode();
   setupVersionInfo();
+  setupCleanup();
 });
 
-// -------------------------------------------------------------------------------------
+// Cleanup
+function setupCleanup() {
+  window.addEventListener("beforeunload", () => {
+    console.log("[App] Starting renderer cleanup...");
+
+    // Stop all timers
+    if (stopwatchIntervalId) {
+      clearInterval(stopwatchIntervalId);
+      stopwatchIntervalId = null;
+    }
+    if (timerIntervalId) {
+      clearInterval(timerIntervalId);
+      timerIntervalId = null;
+    }
+    if (focusIntervalId) {
+      clearInterval(focusIntervalId);
+      focusIntervalId = null;
+    }
+
+    // Stop audio
+    if (backgroundMusic) {
+      backgroundMusic.pause();
+      backgroundMusic.currentTime = 0;
+    }
+    if (timerAlarmAudio) {
+      timerAlarmAudio.pause();
+      timerAlarmAudio.currentTime = 0;
+    }
+
+    // Stop audio detection (will be handled by main process)
+    stopAudioDetection().catch(() => {});
+
+    // Cleanup cursor trail
+    if (cursorTrailInstance) {
+      cursorTrailInstance.destroy();
+    }
+
+    console.log("[App] Renderer cleanup complete");
+  });
+}
+
 // Loading Screen
-// -------------------------------------------------------------------------------------
 function setupLoadingScreen() {
   const loadingScreenElement = document.getElementById("loading-screen");
   const loadingTextElement = document.querySelector(".loading-text");
@@ -127,9 +172,7 @@ function setupLoadingScreen() {
   }, DISPLAY_DURATION);
 }
 
-// -------------------------------------------------------------------------------------
 // Audio Setup (Background Music & Timer Alarm)
-// -------------------------------------------------------------------------------------
 function setupBackgroundMusic() {
   const elements = getElements([
     "background-music",
@@ -288,9 +331,7 @@ function setupShakeDetection() {
   });
 }
 
-// -------------------------------------------------------------------------------------
 // Visual Effects
-// -------------------------------------------------------------------------------------
 function setupCursorTrail() {
   cursorTrailInstance = new CursorTrail();
   cursorTrailInstance.init();
@@ -304,9 +345,7 @@ function setupCursorTrail() {
   }
 }
 
-// -------------------------------------------------------------------------------------
 // Modes
-// -------------------------------------------------------------------------------------
 function setupModeSystem() {
   const elementIds = [
     "mode",
@@ -407,9 +446,7 @@ function switchMode() {
   triggerModeSpeech(nextModeName, "switch");
 }
 
-// -------------------------------------------------------------------------------------
 // Stopwatch
-// -------------------------------------------------------------------------------------
 function setupStopwatch() {
   const stopwatchElements = getElements([
     "stopwatch-start",
@@ -484,9 +521,7 @@ function setupStopwatch() {
   }
 }
 
-// -------------------------------------------------------------------------------------
 // Timer
-// -------------------------------------------------------------------------------------
 function setupTimer() {
   const timerElements = getElements([
     "timer-input",
@@ -588,9 +623,7 @@ function setupTimer() {
   });
 }
 
-// -------------------------------------------------------------------------------------
 // Focus
-// -------------------------------------------------------------------------------------
 function setupFocus() {
   // Focus mode is auto-controlled by switchMode - no buttons needed
 }
@@ -672,10 +705,7 @@ function updateLastFocusDisplay() {
   lastFocusElement.textContent = `Last focus: ${timeStr}`;
 }
 
-// -------------------------------------------------------------------------------------
 // Settings Modal
-// -------------------------------------------------------------------------------------
-
 function applyDebugMode() {
   const debugMode = getSetting("debugMode", false);
   const infoElement = document.getElementById("info");
@@ -903,9 +933,7 @@ function openCreditsModal() {
   });
 }
 
-// -------------------------------------------------------------------------------------
 // Clock & Weather
-// -------------------------------------------------------------------------------------
 function updateClock() {
   const clockEl = document.getElementById("clock");
   const dateEl = document.getElementById("date");
@@ -991,9 +1019,7 @@ function updateWeatherDisplay() {
   weatherElement.textContent = `${tempText}, ${condition}`;
 }
 
-// -------------------------------------------------------------------------------------
 // Petting Logic
-// -------------------------------------------------------------------------------------
 function handlePetAttempt() {
   const { start, end } = getSetting("dayNightTransitionHours", {
     start: 6,
@@ -1044,9 +1070,7 @@ function triggerPetMilestone(count) {
   }
 }
 
-// -------------------------------------------------------------------------------------
 // Speech triggers
-// -------------------------------------------------------------------------------------
 function triggerWeatherSpeech(condition) {
   if (!window.SPEECH_MESSAGES || !window.startTypewriter || !window.speechBox) {
     console.log("[Weather] Speech system not available yet");
@@ -1149,9 +1173,7 @@ function triggerBlockedPettingSpeech() {
   }
 }
 
-// -------------------------------------------------------------------------------------
 // Exports
-// -------------------------------------------------------------------------------------
 export function initializeApp() {
   window.triggerWeatherSpeech = triggerWeatherSpeech;
 

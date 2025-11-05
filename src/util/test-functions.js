@@ -1,14 +1,15 @@
+// Internal modules
 import {
-  triggerPet,
-  setMusicActive,
-  exitTemporaryState,
-} from "../render/state-machine.js";
-import {
-  playTextBeep,
-  initTextSound,
   getAudioState,
+  initTextSound,
+  playTextBeep,
   scheduleTypewriterBeeps,
 } from "../audio/text-audio.js";
+import {
+  exitTemporaryState,
+  setMusicActive,
+  triggerPet,
+} from "../render/state-machine.js";
 
 export function setupTestFunctions() {
   window.testPet = () => triggerPet();

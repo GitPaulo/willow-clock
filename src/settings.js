@@ -1,21 +1,6 @@
-const STORAGE_KEY = "willow-clock-settings";
+import { DEFAULT_SETTINGS } from "./renderer-constants.js";
 
-const DEFAULT_SETTINGS = {
-  audioOnStart: true,
-  audioDetectionEnabled: false,
-  timerAlarmSound: true,
-  cursorTrailEnabled: true,
-  debugMode: false,
-  clockFormat24Hour: true,
-  modeChangeSpeech: true,
-  textSoundEnabled: true,
-  petCount: 0,
-  weatherUpdateFrequency: 120000,
-  temperatureUnit: "celsius",
-  dayNightTransitionHours: { start: 6, end: 18 },
-  hardwareAcceleration: true,
-  fpsTarget: 60,
-};
+const STORAGE_KEY = "willow-clock-settings";
 
 let settings = { ...DEFAULT_SETTINGS };
 

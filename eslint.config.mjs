@@ -9,7 +9,13 @@ export default [
   prettier,
   {
     // Main Electron process (Node.js environment)
-    files: ["main.js", "src/audio/**/*.js"],
+    files: [
+      "main.js",
+      "src/audio/**/*.js",
+      "src/settings-manager.js",
+      "src/ipc-handlers.js",
+      "src/window/**/*.js",
+    ],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",

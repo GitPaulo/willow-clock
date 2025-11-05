@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// outputs JSON:
-// {"playing":true,"sources":["chromium","spotify"]}
+// Linux media state detection using D-Bus MPRIS interface
+// Outputs JSON: {"playing":true,"sources":["chromium","spotify"]}
 
 import { Message } from "dbus-next";
 

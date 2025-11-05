@@ -1,11 +1,9 @@
-/**
- * Cross-platform prebuild script
- * Copies dependencies (PixiJS and FontAwesome) to public directory
- */
+// Cross-platform prebuild script
+// Copies dependencies (PixiJS and FontAwesome) to public directory
 
-import { existsSync, mkdirSync, copyFileSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync } from "fs";
 import { cp } from "fs/promises";
-import { resolve, dirname } from "path";
+import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);

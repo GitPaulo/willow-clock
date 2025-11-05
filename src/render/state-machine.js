@@ -1,3 +1,4 @@
+// Internal modules
 import { isDayTime } from "../util/utils.js";
 
 const STATES = {

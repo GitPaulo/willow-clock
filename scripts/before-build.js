@@ -1,12 +1,10 @@
-/**
- * Pre-build hook for electron-builder
- * Removes platform-specific dependencies on non-matching platforms
- * Copies required assets (PixiJS and FontAwesome) to public directory
- */
+// Pre-build hook for electron-builder
+// Removes platform-specific dependencies on non-matching platforms
+// Copies required assets (PixiJS and FontAwesome) to public directory
 
+import { copyFileSync, existsSync, mkdirSync } from "fs";
+import { cp, rm } from "fs/promises";
 import { platform } from "os";
-import { existsSync, mkdirSync, copyFileSync } from "fs";
-import { rm, cp } from "fs/promises";
 import { resolve } from "path";
 
 export default async function beforeBuild() {

@@ -3,9 +3,9 @@
 // Outputs JSON: {"playing":true,"sources":[]}
 
 import { execFile } from "child_process";
-import { promisify } from "util";
-import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
