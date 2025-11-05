@@ -12,7 +12,7 @@ export default [
     files: [
       "main.js",
       "src/audio/**/*.js",
-      "src/settings-manager.js",
+      "src/settings/settings-manager.js",
       "src/ipc-handlers.js",
       "src/window/**/*.js",
     ],
@@ -65,7 +65,7 @@ export default [
     // Renderer process (Browser environment)
     files: [
       "src/app.js",
-      "src/settings.js",
+      "src/settings/settings.js",
       "src/browser.js",
       "src/audio/system-audio.js",
       "src/audio/text-audio.js",

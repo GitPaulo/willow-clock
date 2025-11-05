@@ -1,7 +1,8 @@
 import { BrowserWindow, ipcMain } from "electron";
+
 import { IPC_CHANNELS } from "./constants.js";
 import { initSystemAudio, stopSystemAudio } from "./audio/main-audio.js";
-import { readSettings, writeSettings } from "./settings-manager.js";
+import { readSettings, writeSettings } from "./settings/settings-manager.js";
 
 export function registerIPCHandlers() {
   // Audio detection

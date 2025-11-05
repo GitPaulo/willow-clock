@@ -3,7 +3,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { app } from "electron";
-import { DEFAULT_SETTINGS } from "./constants.js";
+import { DEFAULT_SETTINGS } from "../constants.js";
 
 function getSettingsPath() {
   return path.join(app.getPath("userData"), "settings.json");

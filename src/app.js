@@ -20,7 +20,7 @@ import {
   resetSettings,
   saveSettings,
   updateSettings,
-} from "./settings.js";
+} from "./settings/settings.js";
 
 // Internal modules - Utilities
 import {
@@ -109,7 +109,7 @@ function setupCleanup() {
     }
 
     // Stop audio detection (will be handled by main process)
-    stopAudioDetection().catch(() => {});
+    stopAudioDetection().catch(() => { });
 
     // Cleanup cursor trail
     if (cursorTrailInstance) {
@@ -469,8 +469,8 @@ function setupStopwatch() {
     const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
+        .toString()
+        .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
     timeDisplayElement.textContent = formattedTime;
   };
 

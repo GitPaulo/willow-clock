@@ -1,4 +1,3 @@
-// Renderer-specific constants
 // Only constants needed by the renderer process
 
 // Default Settings

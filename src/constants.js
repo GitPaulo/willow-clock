@@ -1,5 +1,9 @@
-// Application Constants
-// Centralized configuration for the Willow Clock application
+// Platform Identifiers
+export const PLATFORM = {
+  MACOS: "darwin",
+  WINDOWS: "win32",
+  LINUX: "linux",
+};
 
 // Window Configuration
 export const WINDOW_CONFIG = {

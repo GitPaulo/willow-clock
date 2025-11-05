@@ -12,7 +12,7 @@ import {
 
 // Internal modules
 import { initTextSound, scheduleTypewriterBeeps } from "../audio/text-audio.js";
-import { getSetting } from "../settings.js";
+import { getSetting } from "../settings/settings.js";
 import { parseYAML } from "../util/utils.js";
 import { getCurrentState, onStateChange } from "./state-machine.js";
 

@@ -5,14 +5,14 @@ import { resolve } from "path";
 import { promisify } from "util";
 
 // Internal modules
-import { AUDIO_CONFIG } from "../constants.js";
+import { AUDIO_CONFIG, PLATFORM } from "../constants.js";
 
 const execFileAsync = promisify(execFile);
 
 const EXECUTABLES = {
-  win32: resolve("./bin/MediaState.exe"),
-  linux: resolve("./src/audio/lib/linux/media-state.js"),
-  darwin: resolve("./src/audio/lib/macos/media-state.js"),
+  [PLATFORM.WINDOWS]: resolve("./bin/MediaState.exe"),
+  [PLATFORM.LINUX]: resolve("./src/audio/lib/linux/media-state.js"),
+  [PLATFORM.MACOS]: resolve("./src/audio/lib/macos/media-state.js"),
 };
 
 // Check if external music is currently playing on the system
@@ -47,7 +47,7 @@ async function getMediaState() {
   }
 
   const isUnixLike =
-    currentPlatform === "linux" || currentPlatform === "darwin";
+    currentPlatform === PLATFORM.LINUX || currentPlatform === PLATFORM.MACOS;
   const command = isUnixLike ? "node" : executable;
   const args = isUnixLike ? [executable] : [];
 

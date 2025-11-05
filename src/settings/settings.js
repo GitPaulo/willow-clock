@@ -1,4 +1,6 @@
-import { DEFAULT_SETTINGS } from "./renderer-constants.js";
+/* eslint-env browser */
+
+import { DEFAULT_SETTINGS } from "../render/constants.js";
 
 const STORAGE_KEY = "willow-clock-settings";
 

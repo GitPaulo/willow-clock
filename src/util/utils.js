@@ -1,5 +1,5 @@
 // Internal modules
-import { MODE, MODES } from "../renderer-constants.js";
+import { MODE, MODES } from "../render/constants.js";
 
 export { MODE, MODES };
 

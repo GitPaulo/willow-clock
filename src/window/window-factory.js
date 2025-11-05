@@ -3,7 +3,7 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { app, BrowserWindow } from "electron";
-import { WINDOW_CONFIG } from "../constants.js";
+import { WINDOW_CONFIG, PLATFORM } from "../constants.js";
 import { setupShakeDetection } from "./shake-detection.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,15 +33,15 @@ function buildWindowOptions() {
 
   // Platform-specific overrides
   const platformOverrides = {
-    darwin: {
+    [PLATFORM.MACOS]: {
       titleBarStyle: "hiddenInset",
       roundedCorners: true,
       vibrancy: "under-window",
     },
-    win32: {
+    [PLATFORM.WINDOWS]: {
       roundedCorners: true,
     },
-    linux: {
+    [PLATFORM.LINUX]: {
       titleBarStyle: "hidden",
     },
   };
@@ -57,7 +57,7 @@ export function createWindow() {
 
   win.once("ready-to-show", () => {
     win.show();
-    if (process.platform === "darwin") win.focus();
+    if (process.platform === PLATFORM.MACOS) win.focus();
   });
 
   if (!app.isPackaged) {
