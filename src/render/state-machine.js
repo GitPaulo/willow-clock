@@ -19,6 +19,7 @@ const state = {
   current: null, // Will be set during initialization
   previousState: null,
   listeners: [],
+  petCompleteCallback: null,
 };
 
 const isTemporaryState = (s) => s === STATES.MUSIC || s === STATES.PET;
@@ -71,17 +72,25 @@ export function updateDayNightState(dayStart = 6, dayEnd = 18) {
   changeState(desiredState);
 }
 
-// Trigger pet animation
-export function triggerPet() {
+// Trigger pet animation with optional completion callback
+export function triggerPet(onComplete = null) {
   if (!isTemporaryState(state.current)) {
     state.previousState = state.current;
   }
+  state.petCompleteCallback = onComplete;
   changeState(STATES.PET);
 }
 
 // Exit temporary state
 export function exitTemporaryState() {
   if (!isTemporaryState(state.current)) return;
+
+  // Call pet completion callback if exiting from pet state
+  if (state.current === STATES.PET && state.petCompleteCallback) {
+    state.petCompleteCallback();
+    state.petCompleteCallback = null;
+  }
+
   changeState(state.previousState);
 }
 

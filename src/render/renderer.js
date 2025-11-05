@@ -396,6 +396,7 @@ async function initPixi() {
   let last = performance.now();
   let frames = 0;
   app.ticker.add(() => {
+    // Exit pet state when animation completes
     if (getCurrentState() === "pet" && sprites.pet) {
       const lastFrame = sprites.pet.totalFrames - 1;
       if (sprites.pet.currentFrame >= lastFrame && !sprites.pet.playing) {

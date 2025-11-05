@@ -109,7 +109,7 @@ function setupCleanup() {
     }
 
     // Stop audio detection (will be handled by main process)
-    stopAudioDetection().catch(() => { });
+    stopAudioDetection().catch(() => {});
 
     // Cleanup cursor trail
     if (cursorTrailInstance) {
@@ -469,8 +469,8 @@ function setupStopwatch() {
     const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}:${seconds
-        .toString()
-        .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
+      .toString()
+      .padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`;
     timeDisplayElement.textContent = formattedTime;
   };
 
@@ -1032,15 +1032,18 @@ function handlePetAttempt() {
     return;
   }
 
-  // Block petting during music state
   const currentState = getCurrentState();
   if (currentState === "music") {
     console.log("[App] Petting blocked - music is playing");
     return;
   }
 
-  triggerPet();
-  incrementPetCount();
+  if (currentState === "pet") {
+    console.log("[App] Petting blocked - animation in progress");
+    return;
+  }
+
+  triggerPet(incrementPetCount);
 }
 
 async function incrementPetCount() {
